@@ -1,0 +1,403 @@
+{
+  "name": "AirGuide Design System",
+  "version": "1.0.0",
+  "colors": {
+    "light": {
+      "backgrounds": {
+        "app-bg": {
+          "value": "#f9fafb",
+          "type": "color",
+          "description": "Fondo principal de la aplicación"
+        },
+        "app-header-bg": {
+          "value": "#ffffff",
+          "type": "color",
+          "description": "Fondo de headers y cards"
+        },
+        "app-sidebar-bg": {
+          "value": "#ffffff",
+          "type": "color",
+          "description": "Fondo de sidebar"
+        },
+        "app-hover": {
+          "value": "#f3f4f6",
+          "type": "color",
+          "description": "Estados hover e inputs"
+        }
+      },
+      "text": {
+        "app-text-primary": {
+          "value": "#111827",
+          "type": "color",
+          "description": "Texto principal"
+        },
+        "app-text-secondary": {
+          "value": "#6b7280",
+          "type": "color",
+          "description": "Texto secundario, labels"
+        }
+      },
+      "ui": {
+        "app-border": {
+          "value": "#e5e7eb",
+          "type": "color",
+          "description": "Bordes de elementos"
+        },
+        "app-shadow": {
+          "value": "rgba(0, 0, 0, 0.1)",
+          "type": "color",
+          "description": "Sombras de elementos"
+        }
+      },
+      "actions": {
+        "app-blue": {
+          "value": "#3b82f6",
+          "type": "color",
+          "description": "Acción primaria, links, botones"
+        },
+        "app-blue-light": {
+          "value": "#eff6ff",
+          "type": "color",
+          "description": "Fondos de elementos activos"
+        },
+        "app-green": {
+          "value": "#10b981",
+          "type": "color",
+          "description": "Estados de éxito, confirmación"
+        },
+        "app-red": {
+          "value": "#ef4444",
+          "type": "color",
+          "description": "Estados de error, eliminación"
+        }
+      }
+    },
+    "dark": {
+      "backgrounds": {
+        "app-bg": {
+          "value": "#111827",
+          "type": "color",
+          "description": "Fondo principal de la aplicación"
+        },
+        "app-header-bg": {
+          "value": "#1f2937",
+          "type": "color",
+          "description": "Fondo de headers y cards"
+        },
+        "app-sidebar-bg": {
+          "value": "#1f2937",
+          "type": "color",
+          "description": "Fondo de sidebar"
+        },
+        "app-hover": {
+          "value": "#374151",
+          "type": "color",
+          "description": "Estados hover e inputs"
+        }
+      },
+      "text": {
+        "app-text-primary": {
+          "value": "#f9fafb",
+          "type": "color",
+          "description": "Texto principal"
+        },
+        "app-text-secondary": {
+          "value": "#9ca3af",
+          "type": "color",
+          "description": "Texto secundario, labels"
+        }
+      },
+      "ui": {
+        "app-border": {
+          "value": "#374151",
+          "type": "color",
+          "description": "Bordes de elementos"
+        },
+        "app-shadow": {
+          "value": "rgba(0, 0, 0, 0.5)",
+          "type": "color",
+          "description": "Sombras de elementos"
+        }
+      },
+      "actions": {
+        "app-blue": {
+          "value": "#60a5fa",
+          "type": "color",
+          "description": "Acción primaria, links, botones"
+        },
+        "app-blue-light": {
+          "value": "#1e3a8a",
+          "type": "color",
+          "description": "Fondos de elementos activos"
+        },
+        "app-green": {
+          "value": "#34d399",
+          "type": "color",
+          "description": "Estados de éxito, confirmación"
+        },
+        "app-red": {
+          "value": "#f87171",
+          "type": "color",
+          "description": "Estados de error, eliminación"
+        }
+      }
+    }
+  },
+  "typography": {
+    "font-family": {
+      "value": "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif",
+      "type": "fontFamily"
+    },
+    "font-size": {
+      "base": {
+        "value": "16px",
+        "type": "fontSize"
+      }
+    },
+    "font-weight": {
+      "normal": {
+        "value": 400,
+        "type": "fontWeight"
+      },
+      "medium": {
+        "value": 500,
+        "type": "fontWeight"
+      }
+    },
+    "line-height": {
+      "base": {
+        "value": 1.5,
+        "type": "lineHeight"
+      }
+    }
+  },
+  "spacing": {
+    "2": {
+      "value": "8px",
+      "type": "spacing",
+      "rem": "0.5rem"
+    },
+    "3": {
+      "value": "12px",
+      "type": "spacing",
+      "rem": "0.75rem"
+    },
+    "4": {
+      "value": "16px",
+      "type": "spacing",
+      "rem": "1rem"
+    },
+    "6": {
+      "value": "24px",
+      "type": "spacing",
+      "rem": "1.5rem"
+    },
+    "8": {
+      "value": "32px",
+      "type": "spacing",
+      "rem": "2rem"
+    }
+  },
+  "borderRadius": {
+    "sm": {
+      "value": "6px",
+      "type": "borderRadius",
+      "description": "Elementos pequeños"
+    },
+    "md": {
+      "value": "8px",
+      "type": "borderRadius",
+      "description": "Elementos medianos"
+    },
+    "lg": {
+      "value": "10px",
+      "type": "borderRadius",
+      "description": "Elementos estándar"
+    },
+    "xl": {
+      "value": "14px",
+      "type": "borderRadius",
+      "description": "Elementos grandes"
+    },
+    "full": {
+      "value": "9999px",
+      "type": "borderRadius",
+      "description": "Circular/Pills"
+    }
+  },
+  "components": {
+    "button": {
+      "primary": {
+        "paddingX": "16px",
+        "paddingY": "12px",
+        "borderRadius": "8px",
+        "fontSize": "16px",
+        "fontWeight": 500,
+        "background": "var(--app-blue)",
+        "color": "#ffffff"
+      },
+      "secondary": {
+        "paddingX": "16px",
+        "paddingY": "12px",
+        "borderRadius": "8px",
+        "fontSize": "16px",
+        "fontWeight": 500,
+        "background": "transparent",
+        "border": "1px solid var(--app-border)",
+        "color": "var(--app-text-primary)"
+      },
+      "danger": {
+        "paddingX": "16px",
+        "paddingY": "12px",
+        "borderRadius": "8px",
+        "fontSize": "16px",
+        "fontWeight": 500,
+        "background": "var(--app-red)",
+        "color": "#ffffff"
+      },
+      "icon": {
+        "padding": "8px",
+        "borderRadius": "8px",
+        "iconSize": "20px"
+      }
+    },
+    "input": {
+      "standard": {
+        "paddingX": "16px",
+        "paddingY": "12px",
+        "paddingLeftWithIcon": "40px",
+        "borderRadius": "8px",
+        "fontSize": "16px",
+        "border": "1px solid var(--app-border)",
+        "background": "var(--app-hover)",
+        "height": "48px"
+      }
+    },
+    "card": {
+      "standard": {
+        "padding": "24px",
+        "borderRadius": "8px",
+        "border": "1px solid var(--app-border)",
+        "background": "var(--app-header-bg)"
+      },
+      "withShadow": {
+        "padding": "24px",
+        "borderRadius": "8px",
+        "border": "1px solid var(--app-border)",
+        "background": "var(--app-header-bg)",
+        "boxShadow": "0 10px 15px -3px var(--app-shadow)"
+      }
+    },
+    "header": {
+      "height": "64px",
+      "paddingX": "16px",
+      "paddingY": "12px",
+      "background": "var(--app-header-bg)",
+      "borderBottom": "1px solid var(--app-border)"
+    },
+    "sidebar": {
+      "width": "256px",
+      "background": "var(--app-sidebar-bg)",
+      "borderRight": "1px solid var(--app-border)",
+      "headerPadding": "24px",
+      "navPadding": "16px"
+    },
+    "modal": {
+      "maxWidth": "448px",
+      "padding": "24px",
+      "borderRadius": "8px",
+      "background": "var(--app-header-bg)",
+      "overlay": "rgba(0, 0, 0, 0.5)"
+    },
+    "badge": {
+      "paddingX": "8px",
+      "paddingY": "4px",
+      "fontSize": "12px",
+      "borderRadius": "9999px"
+    },
+    "table": {
+      "headerBackground": "var(--app-hover)",
+      "rowBackground": "var(--app-header-bg)",
+      "border": "1px solid var(--app-border)",
+      "headerPadding": "12px 24px",
+      "cellPadding": "16px 24px"
+    },
+    "alert": {
+      "paddingX": "16px",
+      "paddingY": "12px",
+      "borderRadius": "8px",
+      "fontSize": "14px"
+    }
+  },
+  "icons": {
+    "library": "lucide-react",
+    "sizes": {
+      "sm": "16px",
+      "md": "20px",
+      "lg": "24px",
+      "xl": "32px"
+    },
+    "common": [
+      "MapPin",
+      "Navigation",
+      "Route",
+      "Calendar",
+      "BarChart3",
+      "LayoutDashboard",
+      "Settings",
+      "LogOut",
+      "Moon",
+      "Sun",
+      "Menu",
+      "X",
+      "Mail",
+      "Lock",
+      "User",
+      "Plus",
+      "Edit",
+      "Trash2",
+      "Eye",
+      "AlertCircle",
+      "CheckCircle"
+    ]
+  },
+  "breakpoints": {
+    "sm": "640px",
+    "md": "768px",
+    "lg": "1024px",
+    "xl": "1280px",
+    "2xl": "1536px"
+  },
+  "layouts": {
+    "adminWithSidebar": {
+      "sidebarWidth": "256px",
+      "mainContent": "flex-1"
+    },
+    "mapWithSidebar": {
+      "headerHeight": "64px",
+      "sidebarWidth": "320px",
+      "mainContent": "flex-1"
+    },
+    "centeredAuth": {
+      "maxWidth": "448px",
+      "padding": "16px"
+    },
+    "gridCards": {
+      "mobile": "1 column",
+      "tablet": "2 columns",
+      "desktop": "3 columns",
+      "gap": "24px"
+    }
+  },
+  "shadows": {
+    "sm": "0 1px 2px 0 var(--app-shadow)",
+    "md": "0 4px 6px -1px var(--app-shadow)",
+    "lg": "0 10px 15px -3px var(--app-shadow)",
+    "xl": "0 20px 25px -5px var(--app-shadow)"
+  },
+  "transitions": {
+    "fast": "150ms",
+    "normal": "200ms",
+    "slow": "300ms"
+  }
+}

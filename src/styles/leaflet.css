@@ -1,0 +1,8 @@
+/* Leaflet CSS */
+@import "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+@import "https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css";
+
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+}
