@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MapPin, Navigation, Calendar, Building2, Search, LogIn, Users, LogOut, Moon, Sun, Route as RouteIcon, X, Settings } from 'lucide-react';
+import { MapPin, Navigation, Calendar, Building2, Search, LogIn, Users, LogOut, Moon, Sun, Route as RouteIcon, X, Settings, UserCog } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import L from 'leaflet';
 import 'leaflet-routing-machine';
-import { useEdificios, useEventos } from '../hooks';
+import { useEdificios, useEventos, useProfesores } from '../hooks';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import 'leaflet/dist/leaflet.css';
@@ -56,6 +56,7 @@ export default function MapView() {
   const { theme, toggleTheme } = useTheme();
   const { edificios, loading: loadingEdificios } = useEdificios();
   const { eventos, loading: loadingEventos } = useEventos();
+  const { profesores, loading: loadingProfesores } = useProfesores();
 
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -74,6 +75,7 @@ export default function MapView() {
   const isAdmin = user?.rol === 'admin';
   const canCreateRoutes = isStudent || isAdmin;
 
+  // Filtrar edificios y eventos según búsqueda
   const edificiosFiltrados = edificios.filter(e =>
     e.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -84,12 +86,21 @@ export default function MapView() {
     e.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Filtrar profesores por búsqueda
+  const profesoresFiltrados = profesores.filter(p =>
+    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.departamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.cubiculo?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.cubiculo?.edificio?.nombre.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   // Inicializar mapa
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
     // Crear mapa centrado en Monterrey, México
-    const map = L.map(mapContainerRef.current).setView([20.656333, -100.404745], 15);
+    const map = L.map(mapContainerRef.current).setView([25.6866, -100.3161], 15);
 
     // Agregar capa de tiles
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -268,7 +279,7 @@ export default function MapView() {
             <>
               <div className="flex items-center gap-2 px-3 py-2 bg-[var(--app-hover)] rounded-lg">
                 <Users className="w-4 h-4 text-[var(--app-text-secondary)]" />
-                <span className="text-sm text-[var(--app-text-primary)]">{user.nombre}</span>
+                <span className="text-sm text-[var(--app-text-primary)]">{user.nombre || user.correo}</span>
                 <span className="text-xs text-[var(--app-text-secondary)] bg-[var(--app-blue-light)] px-2 py-0.5 rounded-full">
                   {user.rol}
                 </span>
@@ -282,13 +293,6 @@ export default function MapView() {
                   Dashboard
                 </button>
               )}
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Cerrar Sesión
-              </button>
             </>
           ) : (
             <button
@@ -314,11 +318,63 @@ export default function MapView() {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--app-text-secondary)]" />
           <input
             type="text"
-            placeholder="Buscar edificios, eventos, salones..."
+            placeholder="Buscar edificios, eventos, profesores, salones..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-10 pr-4 py-3 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] placeholder:text-[var(--app-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] focus:border-transparent"
           />
+
+          {/* Resultados de búsqueda de profesores */}
+          {searchTerm && profesoresFiltrados.length > 0 && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-[var(--app-card-bg)] border border-[var(--app-border)] rounded-lg shadow-xl max-h-96 overflow-y-auto z-50">
+              <div className="p-3 border-b border-[var(--app-border)]">
+                <h4 className="text-sm font-semibold text-[var(--app-text-primary)] flex items-center gap-2">
+                  <UserCog className="w-4 h-4 text-[var(--app-blue)]" />
+                  Profesores encontrados ({profesoresFiltrados.length})
+                </h4>
+              </div>
+              <div className="divide-y divide-[var(--app-border)]">
+                {profesoresFiltrados.map((profesor) => (
+                  <div
+                    key={profesor.id_profesor}
+                    onClick={() => {
+                      if (profesor.cubiculo?.edificio) {
+                        const edificio = profesor.cubiculo.edificio;
+                        mapRef.current?.setView([Number(edificio.latitud), Number(edificio.longitud)], 18);
+                        setSelectedMarker({ ...profesor, type: 'profesor' });
+                      }
+                      setSearchTerm('');
+                    }}
+                    className="p-3 hover:bg-[var(--app-hover)] cursor-pointer transition-colors"
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
+                        <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                          {profesor.nombre.charAt(0)}{profesor.apellido.charAt(0)}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-medium text-[var(--app-text-primary)]">
+                          {profesor.nombre} {profesor.apellido}
+                        </div>
+                        {profesor.departamento && (
+                          <div className="text-xs text-[var(--app-text-secondary)]">
+                            {profesor.departamento}
+                          </div>
+                        )}
+                        {profesor.cubiculo && (
+                          <div className="text-xs text-[var(--app-blue)] flex items-center gap-1 mt-1">
+                            <Building2 className="w-3 h-3" />
+                            {profesor.cubiculo.nombre} - {profesor.cubiculo.edificio?.nombre}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -417,11 +473,51 @@ export default function MapView() {
               </>
             )}
 
+            {selectedMarker.type === 'profesor' && (
+              <>
+                <div className="mb-3">
+                  <span className="inline-flex items-center gap-1 px-2 py-1 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300 text-xs rounded-full mb-2">
+                    <UserCog className="w-3 h-3" />
+                    Profesor
+                  </span>
+                </div>
+                {selectedMarker.descripcion && (
+                  <p className="text-sm text-[var(--app-text-secondary)] mb-3">
+                    {selectedMarker.descripcion}
+                  </p>
+                )}
+                <div className="space-y-2 mb-3">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-[var(--app-text-secondary)]">Nombre:</span>
+                    <span className="text-[var(--app-text-primary)] font-medium">
+                      {selectedMarker.nombre} {selectedMarker.apellido}
+                    </span>
+                  </div>
+                  {selectedMarker.departamento && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[var(--app-text-secondary)]">Departamento:</span>
+                      <span className="text-[var(--app-text-primary)] font-medium">
+                        {selectedMarker.departamento}
+                      </span>
+                    </div>
+                  )}
+                  {selectedMarker.cubiculo && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-[var(--app-text-secondary)]">Cubículo:</span>
+                      <span className="text-[var(--app-text-primary)] font-medium">
+                        {selectedMarker.cubiculo.nombre} - {selectedMarker.cubiculo.edificio?.nombre}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
             {/* Mensaje para usuarios no autenticados */}
             {isPublicUser && (
               <div className="p-3 bg-blue-50 dark:bg-blue-950 rounded-lg border border-blue-200 dark:border-blue-800">
                 <p className="text-xs text-blue-700 dark:text-blue-300 text-center">
-                  Inicia sesión como alumno para acceder a más rutas
+                  Inicia sesión como alumno para crear rutas personalizadas
                 </p>
               </div>
             )}

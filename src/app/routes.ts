@@ -10,6 +10,7 @@ import EventsManagement from './pages/admin/EventsManagement';
 import EdificiosManagement from './pages/admin/EdificiosManagement';
 import SalonesManagement from './pages/admin/SalonesManagement';
 import Analytics from './pages/admin/Analytics';
+import MapView from './pages/MapView';
 
 export const router = createBrowserRouter([
   {
@@ -26,7 +27,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/map',
-    Component: ProtectedMap
+    Component: MapView
   },
   // Rutas de administrador
   {

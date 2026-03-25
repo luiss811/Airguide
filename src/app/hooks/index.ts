@@ -18,3 +18,6 @@ export type { Usuario } from './useUsuarios';
 
 export { useSalones } from './useSalones';
 export type { Salon } from './useSalones';
+
+export { useProfesores } from './useProfesores';
+export type { Profesor } from './useProfesores';
