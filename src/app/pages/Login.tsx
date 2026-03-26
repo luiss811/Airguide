@@ -9,7 +9,7 @@ export default function Login() {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login, user } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,23 +22,20 @@ export default function Login() {
     }
 
     setLoading(true);
+    const result = await login(correo, password);
 
-    const success = await login(correo, password);
-    setLoading(false);
 
-    if (success) {
-      const userData = localStorage.getItem('usuario');
-      if (userData) {
-        const parsedUser = JSON.parse(userData);
-        if (parsedUser.rol === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/');
-        }
-      }
-    } else {
-      setError('Credenciales incorrectas o usuario no activo');
+    if (!result.success) {
+      setLoading(false);
+      setError(result.error);
+      return;
     }
+
+    if (result.requiresTwoFactor === true) {
+      setLoading(false);
+      navigate('/verify-2fa', { state: { correo: result.correo } });
+    }
+    setLoading(false);
   };
 
   return (
@@ -75,89 +72,61 @@ export default function Login() {
               <label htmlFor="correo" className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
                 Correo Electrónico
               </label>
-              {error ?
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--app-red)' }} />
-                  <input
-                    id="correo"
-                    type="email"
-                    value={correo}
-                    onChange={(e) => setCorreo(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid var(--app-red)',
-                      color: 'var(--app-red)'
-                    }}
-                    placeholder="tu correo institucional"
-                  />
-                </div>
-                : (
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--app-text-secondary)' }} />
-                    <input
-                      id="correo"
-                      type="email"
-                      value={correo}
-                      onChange={(e) => setCorreo(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      style={{
-                        background: 'var(--app-hover)',
-                        border: '1px solid var(--app-border)',
-                        color: 'var(--app-text-primary)'
-                      }}
-                      placeholder="tu correo institucional"
-                    />
-                  </div>
-                )}
+              <div className="relative">
+                <Mail
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                  style={{ color: error ? 'var(--app-red)' : 'var(--app-text-secondary)' }}
+                />
+                <input
+                  id="correo"
+                  type="email"
+                  value={correo}
+                  onChange={(e) => setCorreo(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{
+                    background: error ? 'rgba(239, 68, 68, 0.1)' : 'var(--app-hover)',
+                    border: `1px solid ${error ? 'var(--app-red)' : 'var(--app-border)'}`,
+                    color: error ? 'var(--app-red)' : 'var(--app-text-primary)',
+                  }}
+                  placeholder="tu correo institucional"
+                />
+              </div>
             </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
                 Contraseña
               </label>
-              {error ?
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--app-red)' }} />
-                  <input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    style={{
-                      background: 'rgba(239, 68, 68, 0.1)',
-                      border: '1px solid var(--app-red)',
-                      color: 'var(--app-red)'
-                    }}
-                    placeholder="••••••••"
-                  />
-                </div> : (
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--app-text-secondary)' }} />
-                    <input
-                      id="password"
-                      type="password"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                      style={{
-                        background: 'var(--app-hover)',
-                        border: '1px solid var(--app-border)',
-                        color: 'var(--app-text-primary)'
-                      }}
-                      placeholder="••••••••"
-                    />
-                  </div>
-                )}
+              <div className="relative">
+                <Lock
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5"
+                  style={{ color: error ? 'var(--app-red)' : 'var(--app-text-secondary)' }}
+                />
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{
+                    background: error ? 'rgba(239, 68, 68, 0.1)' : 'var(--app-hover)',
+                    border: `1px solid ${error ? 'var(--app-red)' : 'var(--app-border)'}`,
+                    color: error ? 'var(--app-red)' : 'var(--app-text-primary)',
+                  }}
+                  placeholder="••••••••"
+                />
+              </div>
             </div>
 
             {error && (
-              <div className="px-4 py-3 rounded-lg text-sm" style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid var(--app-red)',
-                color: 'var(--app-red)'
-              }}>
+              <div
+                className="px-4 py-3 rounded-lg text-sm"
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid var(--app-red)',
+                  color: 'var(--app-red)',
+                }}
+              >
                 {error}
               </div>
             )}
@@ -168,33 +137,37 @@ export default function Login() {
               className="w-full py-3 rounded-lg font-medium text-white transition-opacity disabled:opacity-50"
               style={{ background: 'var(--app-blue)' }}
             >
-              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading ? 'Verificando credenciales...' : 'Continuar'}
             </button>
           </form>
 
-          {/* Olvidaste tu contrasña? */}
-          <div className="mt-6 text-center">
+          {/* 2FA notice */}
+          <div
+            className="mt-5 px-4 py-3 rounded-lg text-xs text-center"
+            style={{
+              background: 'var(--app-blue-light)',
+              color: 'var(--app-blue)',
+              border: '1px solid var(--app-blue)',
+              opacity: 0.85,
+            }}
+          >
+            🔒 Recibirás un código de verificación en tu correo para completar el inicio de sesión.
+          </div>
+
+          {/* Forgot password */}
+          <div className="mt-5 text-center">
             <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
-              {' '}
-              <Link
-                to="/login"
-                className="font-medium hover:underline"
-                style={{ color: 'var(--app-blue)' }}
-              >
+              <Link to="/login" className="font-medium hover:underline" style={{ color: 'var(--app-blue)' }}>
                 ¿Olvidaste tu contraseña?
               </Link>
             </p>
           </div>
 
-          {/* Registro */}
-          <div className="mt-6 text-center">
+          {/* Register */}
+          <div className="mt-4 text-center">
             <p className="text-sm" style={{ color: 'var(--app-text-secondary)' }}>
               ¿No tienes cuenta?{' '}
-              <Link
-                to="/register"
-                className="font-medium hover:underline"
-                style={{ color: 'var(--app-blue)' }}
-              >
+              <Link to="/register" className="font-medium hover:underline" style={{ color: 'var(--app-blue)' }}>
                 Regístrate aquí
               </Link>
             </p>

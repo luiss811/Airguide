@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { Outlet, useNavigate, useLocation } from 'react-router';
 import { Building2, Calendar, BarChart3, Settings, ArrowLeft, LogOut, Moon, Sun, Users } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -15,29 +15,36 @@ export default function ManagementView() {
       id: 'edificios',
       label: 'Edificios',
       icon: Building2,
-      path: '/gestion/edificios',
+      path: '/admin/edificios',
       description: 'Gestión de edificios y ubicaciones'
     },
     {
       id: 'eventos',
       label: 'Eventos',
       icon: Calendar,
-      path: '/gestion/eventos',
+      path: '/admin/events',
       description: 'Administración de eventos'
     },
     {
       id: 'analytics',
       label: 'Analytics',
       icon: BarChart3,
-      path: '/gestion/analytics',
+      path: '/admin/analytics',
       description: 'Estadísticas y reportes'
     },
     {
       id: 'salones',
       label: 'Salones',
       icon: Settings,
-      path: '/gestion/salones',
+      path: '/admin/salones',
       description: 'Gestión de salones'
+    },
+    {
+      id: 'usuarios',
+      label: 'Usuarios',
+      icon: Users,
+      path: '/admin/usuarios',
+      description: 'Gestión de usuarios y accesos'
     }
   ];
 

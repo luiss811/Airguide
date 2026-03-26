@@ -1,16 +1,15 @@
-import React from 'react';
 import { useNavigate } from 'react-router';
 import {
-  LayoutDashboard,
   Building2,
   Calendar,
   BarChart3,
   Users,
   MapPin,
-  LogOut,
-  Moon,
-  Sun,
-  Settings
+  Settings,
+  Route,
+  UserCheck,
+  UserX,
+  TrendingUp
 } from 'lucide-react';
 import { useAnalytics, useUsuarios } from '../../hooks';
 import { useAuth } from '../../context/AuthContext';
@@ -37,68 +36,6 @@ export default function DashboardAdmin() {
       alert(err.message);
     }
   };
-
-  const quickActions = [
-    {
-      title: 'Edificios',
-      description: 'Gestionar edificios y ubicaciones',
-      icon: Building2,
-      color: 'bg-blue-500',
-      path: '/gestion/edificios',
-      count: dashboardStats?.edificios.total || 0
-    },
-    {
-      title: 'Eventos',
-      description: 'Administrar eventos de la universidad',
-      icon: Calendar,
-      color: 'bg-green-500',
-      path: '/gestion/eventos',
-      count: dashboardStats?.eventos.total || 0
-    },
-    {
-      title: 'Analytics',
-      description: 'Ver estadísticas y reportes',
-      icon: BarChart3,
-      color: 'bg-purple-500',
-      path: '/gestion/analytics',
-      count: dashboardStats?.totalAccesos || 0
-    },
-    {
-      title: 'Salones',
-      description: 'Gestionar salones dentro de edificios',
-      icon: Settings,
-      color: 'bg-orange-500',
-      path: '/gestion/salones',
-      count: dashboardStats?.salones || 0
-    }
-  ];
-
-  const stats = [
-    {
-      label: 'Usuarios Totales',
-      value: dashboardStats?.usuarios.total || 0,
-      icon: Users,
-      color: 'text-blue-600 dark:text-blue-400'
-    },
-    {
-      label: 'Edificios Activos',
-      value: dashboardStats?.edificios.activos || 0,
-      icon: Building2,
-      color: 'text-green-600 dark:text-green-400'
-    },
-    {
-      label: 'Eventos Activos',
-      value: dashboardStats?.eventos.activos || 0,
-      icon: Calendar,
-      color: 'text-purple-600 dark:text-purple-400'
-    },
-    {
-      label: 'Rutas Creadas',
-      value: dashboardStats?.rutas.total || 0,
-      icon: MapPin,
-      color: 'text-orange-600 dark:text-orange-400'
-    },
-  ];
 
   return (
       <div className="p-6 space-y-6">
@@ -306,15 +243,15 @@ export default function DashboardAdmin() {
             </button>
 
             <button
-              onClick={() => navigate('/admin/rutas')}
+              onClick={() => navigate('/admin/usuarios')}
               className="bg-[var(--app-header-bg)] border border-[var(--app-border)] rounded-lg p-6 hover:border-[var(--app-blue)] transition-colors text-left"
             >
-              <Route className="w-8 h-8 text-orange-500 mb-3" />
+              <Users className="w-8 h-8 text-indigo-500 mb-3" />
               <h3 className="font-semibold text-[var(--app-text-primary)] mb-1">
-                Rutas
+                Usuarios
               </h3>
               <p className="text-sm text-[var(--app-text-secondary)]">
-                Gestionar rutas de navegación
+                Gestionar base de usuarios
               </p>
             </button>
 

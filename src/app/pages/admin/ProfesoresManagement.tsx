@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Users, 
   Plus, 
@@ -8,16 +8,11 @@ import {
   X,
   Building2,
   Mail,
-  Phone,
   Briefcase,
   MapPin
 } from 'lucide-react';
-import { useProfesores, useSalones } from '../../../hooks';
+import { useProfesores, useSalones, useUsuarios } from '../../hooks';
 
-/**
- * Profesores Management
- * CRUD completo de profesores con asignación de cubículos
- */
 export default function ProfesoresManagement() {
   const { 
     profesores, 
@@ -28,6 +23,7 @@ export default function ProfesoresManagement() {
   } = useProfesores();
   
   const { salones } = useSalones();
+  const { usuarios } = useUsuarios();
   
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -35,10 +31,7 @@ export default function ProfesoresManagement() {
   const [editingProfesor, setEditingProfesor] = useState<any | null>(null);
   const [deletingProfesor, setDeletingProfesor] = useState<any | null>(null);
   const [formData, setFormData] = useState({
-    nombre: '',
-    apellido: '',
-    email: '',
-    telefono: '',
+    id_usuario: '',
     departamento: '',
     id_cubiculo: '',
     activo: true
@@ -46,25 +39,25 @@ export default function ProfesoresManagement() {
   const [formErrors, setFormErrors] = useState<any>({});
   const [submitting, setSubmitting] = useState(false);
 
-  // Filtrar solo cubículos (tipo: oficina)
+  // Filtrar solo cubículos
   const cubiculos = salones.filter(s => s.tipo === 'oficina');
 
   // Filtrar profesores por búsqueda
   const profesoresFiltrados = profesores.filter(p =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.usuario?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.usuario?.correo.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.departamento?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const usuariosDisponibles = usuarios.filter(u => 
+    !profesores.some(p => p.id_usuario === u.id_usuario)
   );
 
   const handleOpenModal = (profesor?: any) => {
     if (profesor) {
       setEditingProfesor(profesor);
       setFormData({
-        nombre: profesor.nombre,
-        apellido: profesor.apellido,
-        email: profesor.email,
-        telefono: profesor.telefono || '',
+        id_usuario: profesor.id_usuario?.toString() || '',
         departamento: profesor.departamento || '',
         id_cubiculo: profesor.id_cubiculo?.toString() || '',
         activo: profesor.activo
@@ -72,10 +65,7 @@ export default function ProfesoresManagement() {
     } else {
       setEditingProfesor(null);
       setFormData({
-        nombre: '',
-        apellido: '',
-        email: '',
-        telefono: '',
+        id_usuario: '',
         departamento: '',
         id_cubiculo: '',
         activo: true
@@ -89,10 +79,7 @@ export default function ProfesoresManagement() {
     setShowModal(false);
     setEditingProfesor(null);
     setFormData({
-      nombre: '',
-      apellido: '',
-      email: '',
-      telefono: '',
+      id_usuario: '',
       departamento: '',
       id_cubiculo: '',
       activo: true
@@ -103,18 +90,12 @@ export default function ProfesoresManagement() {
   const validateForm = () => {
     const errors: any = {};
     
-    if (!formData.nombre.trim()) {
-      errors.nombre = 'El nombre es requerido';
+    if (!formData.departamento.trim()) {
+      errors.departamento = 'El departamento es requerido';
     }
     
-    if (!formData.apellido.trim()) {
-      errors.apellido = 'El apellido es requerido';
-    }
-    
-    if (!formData.email.trim()) {
-      errors.email = 'El email es requerido';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'El email no es válido';
+    if (!editingProfesor && !formData.id_usuario) {
+      errors.id_usuario = 'Debe seleccionar un usuario';
     }
     
     return errors;
@@ -133,14 +114,14 @@ export default function ProfesoresManagement() {
     
     try {
       const data: any = {
-        nombre: formData.nombre.trim(),
-        apellido: formData.apellido.trim(),
-        email: formData.email.trim(),
-        telefono: formData.telefono.trim() || null,
         departamento: formData.departamento.trim() || null,
         id_cubiculo: formData.id_cubiculo ? parseInt(formData.id_cubiculo) : null,
         activo: formData.activo
       };
+
+      if (!editingProfesor) {
+        data.id_usuario = parseInt(formData.id_usuario);
+      }
 
       if (editingProfesor) {
         await updateProfesor(editingProfesor.id_profesor, data);
@@ -305,26 +286,20 @@ export default function ProfesoresManagement() {
                       <div className="flex items-center">
                         <div className="flex-shrink-0 w-10 h-10 bg-[var(--app-blue-light)] rounded-full flex items-center justify-center">
                           <span className="text-sm font-medium text-[var(--app-blue)]">
-                            {profesor.nombre.charAt(0)}{profesor.apellido.charAt(0)}
+                            {profesor.usuario?.nombre ? profesor.usuario.nombre.substring(0, 2).toUpperCase() : 'PR'}
                           </span>
                         </div>
                         <div className="ml-4">
                           <div className="text-sm font-medium text-[var(--app-text-primary)]">
-                            {profesor.nombre} {profesor.apellido}
+                            {profesor.usuario?.nombre || 'Nombre no disponible'}
                           </div>
-                          {profesor.telefono && (
-                            <div className="text-xs text-[var(--app-text-secondary)] flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {profesor.telefono}
-                            </div>
-                          )}
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center gap-2 text-sm text-[var(--app-text-secondary)]">
                         <Mail className="w-4 h-4" />
-                        {profesor.email}
+                        {profesor.usuario?.correo || 'Correo no disponible'}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -403,82 +378,60 @@ export default function ProfesoresManagement() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
-                    Nombre *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.nombre}
-                    onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
-                    className={`w-full px-3 py-2 bg-[var(--app-hover)] border rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] ${
-                      formErrors.nombre ? 'border-red-500' : 'border-[var(--app-border)]'
-                    }`}
-                  />
-                  {formErrors.nombre && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.nombre}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
-                    Apellido *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.apellido}
-                    onChange={(e) => setFormData({ ...formData, apellido: e.target.value })}
-                    className={`w-full px-3 py-2 bg-[var(--app-hover)] border rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] ${
-                      formErrors.apellido ? 'border-red-500' : 'border-[var(--app-border)]'
-                    }`}
-                  />
-                  {formErrors.apellido && (
-                    <p className="mt-1 text-xs text-red-500">{formErrors.apellido}</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className={`w-full px-3 py-2 bg-[var(--app-hover)] border rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] ${
-                    formErrors.email ? 'border-red-500' : 'border-[var(--app-border)]'
-                  }`}
-                />
-                {formErrors.email && (
-                  <p className="mt-1 text-xs text-red-500">{formErrors.email}</p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {!editingProfesor && (
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
+                      Seleccionar Usuario *
+                    </label>
+                    <select
+                      value={formData.id_usuario}
+                      onChange={(e) => setFormData({ ...formData, id_usuario: e.target.value })}
+                      className={`w-full px-3 py-2 bg-[var(--app-hover)] border rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] ${
+                        formErrors.id_usuario ? 'border-red-500' : 'border-[var(--app-border)]'
+                      }`}
+                    >
+                      <option value="">Selecciona un usuario...</option>
+                      {usuariosDisponibles.map((usuario) => (
+                        <option key={usuario.id_usuario} value={usuario.id_usuario}>
+                          {usuario.nombre} ({usuario.correo})
+                        </option>
+                      ))}
+                    </select>
+                    {formErrors.id_usuario && (
+                      <p className="mt-1 text-xs text-red-500">{formErrors.id_usuario}</p>
+                    )}
+                  </div>
                 )}
-              </div>
+                {editingProfesor && (
+                  <div>
+                    <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
+                      Usuario
+                    </label>
+                    <input
+                      type="text"
+                      disabled
+                      value={editingProfesor.usuario?.nombre || 'Nombre no disponible'}
+                      className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-secondary)] opacity-70 cursor-not-allowed"
+                    />
+                  </div>
+                )}
 
-              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    value={formData.telefono}
-                    onChange={(e) => setFormData({ ...formData, telefono: e.target.value })}
-                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
-                    Departamento
+                    Departamento *
                   </label>
                   <input
                     type="text"
                     value={formData.departamento}
                     onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
-                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                    className={`w-full px-3 py-2 bg-[var(--app-hover)] border rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] ${
+                      formErrors.departamento ? 'border-red-500' : 'border-[var(--app-border)]'
+                    }`}
                   />
+                  {formErrors.departamento && (
+                    <p className="mt-1 text-xs text-red-500">{formErrors.departamento}</p>
+                  )}
                 </div>
               </div>
 
@@ -546,7 +499,7 @@ export default function ProfesoresManagement() {
             <p className="text-[var(--app-text-secondary)] mb-6">
               ¿Estás seguro de que deseas eliminar al profesor{' '}
               <strong className="text-[var(--app-text-primary)]">
-                {deletingProfesor.nombre} {deletingProfesor.apellido}
+                {deletingProfesor.usuario?.nombre || 'Nombre desconocido'}
               </strong>?
               Esta acción no se puede deshacer.
             </p>

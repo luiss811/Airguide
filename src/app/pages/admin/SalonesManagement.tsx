@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, DoorOpen, Building2, Search, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, DoorOpen, Building2, Search } from 'lucide-react';
 import { useSalones, useEdificios } from '../../hooks';
 import { toast } from 'sonner';
 
@@ -13,7 +13,6 @@ export default function SalonesManagement() {
     const [deletingSalon, setDeletingSalon] = useState<any>(null);
     const [formData, setFormData] = useState({
         nombre: '',
-        capacidad: '',
         tipo: 'aula' as 'aula' | 'laboratorio' | 'auditorio' | 'oficina',
         id_edificio: '',
         piso: '',
@@ -31,7 +30,6 @@ export default function SalonesManagement() {
         try {
             const data = {
                 nombre: formData.nombre,
-                capacidad: parseInt(formData.capacidad),
                 tipo: formData.tipo,
                 id_edificio: parseInt(formData.id_edificio),
                 piso: parseInt(formData.piso),
@@ -58,7 +56,6 @@ export default function SalonesManagement() {
         setEditingSalon(salon);
         setFormData({
             nombre: salon.nombre,
-            capacidad: salon.capacidad.toString(),
             tipo: salon.tipo,
             id_edificio: salon.id_edificio.toString(),
             piso: salon.piso.toString(),
@@ -89,7 +86,6 @@ export default function SalonesManagement() {
     const resetForm = () => {
         setFormData({
             nombre: '',
-            capacidad: '',
             tipo: 'aula',
             id_edificio: '',
             piso: '',
@@ -185,17 +181,6 @@ export default function SalonesManagement() {
                         </div>
                     </div>
                 </div>
-                <div className="bg-[var(--app-card-bg)] border border-[var(--app-border)] rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-xs text-[var(--app-text-secondary)]">Capacidad Total</p>
-                            <p className="text-2xl font-bold text-[var(--app-text-primary)]">
-                                {salones.reduce((sum, s) => sum + s.capacidad, 0)}
-                            </p>
-                        </div>
-                        <Users className="w-8 h-8 text-green-600 dark:text-green-400 opacity-50" />
-                    </div>
-                </div>
             </div>
 
             {/* Table */}
@@ -214,9 +199,6 @@ export default function SalonesManagement() {
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
                                 Piso
-                            </th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
-                                Capacidad
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
                                 Estado
@@ -273,11 +255,6 @@ export default function SalonesManagement() {
                                     <td className="px-6 py-4">
                                         <span className="text-sm text-[var(--app-text-primary)]">
                                             Piso {salon.piso}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm text-[var(--app-text-primary)]">
-                                            {salon.capacidad} personas
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
@@ -388,21 +365,6 @@ export default function SalonesManagement() {
                                         placeholder="1"
                                     />
                                 </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
-                                    Capacidad *
-                                </label>
-                                <input
-                                    type="number"
-                                    required
-                                    min="1"
-                                    value={formData.capacidad}
-                                    onChange={(e) => setFormData({ ...formData, capacidad: e.target.value })}
-                                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
-                                    placeholder="30"
-                                />
                             </div>
 
                             <div className="flex items-center gap-2">

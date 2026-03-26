@@ -11,6 +11,9 @@ import EdificiosManagement from './pages/admin/EdificiosManagement';
 import SalonesManagement from './pages/admin/SalonesManagement';
 import Analytics from './pages/admin/Analytics';
 import MapView from './pages/MapView';
+import ProfesoresManagement from './pages/admin/ProfesoresManagement';
+import UsuariosManagement from './pages/admin/UsuariosManagement';
+import VerifyTwoFactor from './pages/VerifyTwoFactor';
 
 export const router = createBrowserRouter([
   {
@@ -27,7 +30,11 @@ export const router = createBrowserRouter([
   },
   {
     path: '/map',
-    Component: MapView
+    Component: ProtectedMap
+  },
+  {
+    path:'verify-2fa',
+    Component: VerifyTwoFactor
   },
   // Rutas de administrador
   {
@@ -51,6 +58,14 @@ export const router = createBrowserRouter([
         Component: SalonesManagement,
       },
       {
+        path: 'profesores',
+        Component: ProfesoresManagement,
+      },
+      {
+        path: 'usuarios',
+        Component: UsuariosManagement,
+      },
+      {
         path: 'analytics',
         Component: Analytics,
       },
@@ -58,6 +73,6 @@ export const router = createBrowserRouter([
   },
   {
     path: '*',
-    Component: RedirectToHome,
+    Component: Login,
   },
 ]);

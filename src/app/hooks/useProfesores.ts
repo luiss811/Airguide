@@ -4,20 +4,23 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
 export interface Profesor {
   id_profesor: number;
-  nombre: string;
-  apellido: string;
-  email: string;
-  telefono?: string | null;
+  id_usuario: number;
   departamento?: string | null;
   id_cubiculo?: number | null;
   activo: boolean;
   createdAt?: string;
   updatedAt?: string;
-  cubiculo?: {
-    id_salon: number;
+  usuario?: {
     nombre: string;
+    correo: string;
+  };
+  cubiculos?: Array<{
+    id_cubiculo: number;
+    id_profesor: number;
     id_edificio: number;
+    numero: string;
     piso: number;
+    referencia?: string | null;
     edificio?: {
       id_edificio: number;
       nombre: string;
@@ -25,7 +28,7 @@ export interface Profesor {
       longitud: string;
       tipo: string;
     };
-  };
+  }>;
 }
 
 export function useProfesores(autoFetch = true) {

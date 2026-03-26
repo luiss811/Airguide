@@ -7,7 +7,9 @@ export default function EdificiosManagement() {
   const { edificios, loading, createEdificio, updateEdificio, deleteEdificio, fetchEdificios } = useEdificios();
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingEdificio, setEditingEdificio] = useState<any>(null);
+  const [deletingEdificio, setDeletingEdificio] = useState<any>(null);
   const [formData, setFormData] = useState({
     nombre: '',
     descripcion: '',
@@ -63,12 +65,19 @@ export default function EdificiosManagement() {
     setShowModal(true);
   };
 
-  const handleDelete = async (id: number, nombre: string) => {
-    if (!confirm(`¿Estás seguro de eliminar el edificio "${nombre}"?`)) return;
+  const handleDeleteClick = (edificio: any) => {
+    setDeletingEdificio(edificio);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingEdificio) return;
 
     try {
-      await deleteEdificio(id);
+      await deleteEdificio(deletingEdificio.id_edificio);
       toast.success('Edificio eliminado correctamente');
+      setShowDeleteModal(false);
+      setDeletingEdificio(null);
       fetchEdificios();
     } catch (error: any) {
       toast.error(error.message || 'Error al eliminar edificio');
@@ -214,7 +223,7 @@ export default function EdificiosManagement() {
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
-                        onClick={() => handleDelete(edificio.id_edificio, edificio.nombre)}
+                        onClick={() => handleDeleteClick(edificio)}
                         className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
                         title="Eliminar"
                       >
@@ -343,6 +352,50 @@ export default function EdificiosManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* Modal Eliminar */}
+      {showDeleteModal && deletingEdificio && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[var(--app-text-primary)]">
+                    Eliminar Edificio
+                  </h3>
+                  <p className="text-sm text-[var(--app-text-secondary)]">
+                    Esta acción no se puede deshacer
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-sm text-[var(--app-text-primary)] mb-6">
+                ¿Estás seguro de que deseas eliminar el edificio <strong>"{deletingEdificio.nombre}"</strong>?
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletingEdificio(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-[var(--app-hover)] text-[var(--app-text-primary)] rounded-lg hover:bg-opacity-80 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

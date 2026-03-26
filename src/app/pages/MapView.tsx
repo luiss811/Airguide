@@ -41,15 +41,6 @@ const eventoIcon = new L.Icon({
   popupAnchor: [0, -42],
 });
 
-/**
- * VISTA 1: Mapa Unificado
- * 
- * Este componente sirve tanto para usuarios públicos como registrados.
- * Muestra diferente contenido según el tipo de usuario:
- * - Visitantes (no autenticados): Solo visualización del mapa
- * - Alumnos (autenticados): Pueden calcular rutas
- * - Administradores: Acceso completo + botón al dashboard
- */
 export default function MapView() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -88,8 +79,6 @@ export default function MapView() {
 
   // Filtrar profesores por búsqueda
   const profesoresFiltrados = profesores.filter(p =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.apellido.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.departamento?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.cubiculo?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.cubiculo?.edificio?.nombre.toLowerCase().includes(searchTerm.toLowerCase())
@@ -260,7 +249,7 @@ export default function MapView() {
 
   const handleLogout = () => {
     logout();
-    navigate('/mapa');
+    navigate('/');
   };
 
   return (
@@ -350,13 +339,10 @@ export default function MapView() {
                     <div className="flex items-start gap-3">
                       <div className="flex-shrink-0 w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center">
                         <span className="text-sm font-medium text-purple-600 dark:text-purple-400">
-                          {profesor.nombre.charAt(0)}{profesor.apellido.charAt(0)}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-[var(--app-text-primary)]">
-                          {profesor.nombre} {profesor.apellido}
-                        </div>
+                        
                         {profesor.departamento && (
                           <div className="text-xs text-[var(--app-text-secondary)]">
                             {profesor.departamento}

@@ -3,21 +3,23 @@ import { AdminLayout } from './components/AdminLayout';
 import Map from "./pages/Map";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import VerifyTwoFactor from "./pages/VerifyTwoFactor";
 import EdificiosManagement from "./pages/admin/EdificiosManagement";
 import EventsManagement from "./pages/admin/EventsManagement";
 import Analytics from "./pages/admin/Analytics";
 import SalonesManagement from "./pages/admin/SalonesManagement";
+import UsuariosManagement from "./pages/admin/UsuariosManagement";
 
 
 const isAuthenticated = () => {
-  return localStorage.getItem("user") !== null;
+  return localStorage.getItem("usuario") !== null;
 };
 
 const isAdmin = () => {
-  const user = localStorage.getItem("user");
+  const user = localStorage.getItem("usuario");
   if (!user) return false;
   const userData = JSON.parse(user);
-  return userData.role === "admin";
+  return userData.rol === "admin";
 };
 
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
@@ -44,6 +46,10 @@ export const router = createBrowserRouter([
   {
     path: "/register",
     element: <Register />,
+  },
+  {
+    path: "/verify-2fa",
+    element: <VerifyTwoFactor />,
   },
   {
     path: "/map",
@@ -80,6 +86,10 @@ export const router = createBrowserRouter([
       {
         path: "salones",
         element: <SalonesManagement />,
+      },
+      {
+        path: "usuarios",
+        element: <UsuariosManagement />,
       },
     ],
   },
