@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-    MapPin, Navigation, Calendar, Building2, Search, 
-    LogIn, UserCog, Users, LogOut, Route as RouteIcon, 
-    X, LocateFixed 
+import {
+    MapPin, Navigation, Calendar, Building2, Search,
+    LogIn, UserCog, Users, LogOut, Route as RouteIcon,
+    X, LocateFixed
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import logoUTEQ from '../../styles/images/letras_uteq_azul2025.png';
@@ -11,6 +11,7 @@ import 'leaflet-routing-machine';
 import { useEdificios, useEventos, useProfesores } from '../hooks';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
+import { SearchBar } from '../components/SearchBar';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
 
@@ -62,7 +63,7 @@ export default function Map() {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
     const { edificios, loading: loadingEdificios } = useEdificios();
-    const { eventos, loading: loadingEventos } = useEventos();
+    useEventos();
     const { profesores } = useProfesores();
 
     const mapRef = useRef<L.Map | null>(null);
@@ -162,14 +163,16 @@ export default function Map() {
     }, [geojsonData]);
 
     // 5. ACTUALIZAR MARCADORES (Pins de Edificios y Eventos)
-    const profesoresFiltrados = profesores.filter(p =>
+    const canViewProfesores = user && ['alumno', 'admin', 'rector'].includes(user.rol);
+
+    const profesoresFiltrados = canViewProfesores ? profesores.filter(p =>
         p.usuario?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.departamento?.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    ) : [];
 
     const edificiosFiltrados = edificios.filter(e => {
         const matchesEdificio = e.nombre.toLowerCase().includes(searchTerm.toLowerCase());
-        const hasMatchingProfesor = profesoresFiltrados.some(p => 
+        const hasMatchingProfesor = profesoresFiltrados.some(p =>
             p.cubiculos?.some(c => c.id_edificio === e.id_edificio)
         );
         return matchesEdificio || (searchTerm !== '' && hasMatchingProfesor);
@@ -217,7 +220,7 @@ export default function Map() {
                 profile: 'foot' // Fuerza ruta por caminos peatonales
             }),
             lineOptions: { styles: [{ color: '#10B981', opacity: 0.8, weight: 6 }] },
-            createMarker: (i: number, waypoint: any) => 
+            createMarker: (i: number, waypoint: any) =>
                 L.marker(waypoint.latLng).bindPopup(i === 0 ? originLabel : destination.nombre)
         }).addTo(mapRef.current);
         setShowRoutePanel(false);
@@ -251,45 +254,25 @@ export default function Map() {
                 </div>
             </header>
 
-            <div className="bg-[var(--app-header-bg)] border-b border-[var(--app-border)] px-4 py-3 relative">
-                <div className="max-w-2xl mx-auto relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--app-text-secondary)]" />
-                    <input
-                        type="text"
-                        placeholder="Buscar edificios, profes..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)]"
-                    />
-                    {searchTerm && profesoresFiltrados.length > 0 && (
-                        <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border rounded-lg shadow-2xl z-[2000] max-h-60 overflow-y-auto">
-                            {profesoresFiltrados.map(p => (
-                                <div key={p.id_profesor} className="p-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-sm" onClick={() => {
-                                    if (p.cubiculos && p.cubiculos.length > 0) {
-                                        const cubiculo = p.cubiculos[0];
-                                        const ed = cubiculo.edificio;
-                                        if (ed) {
-                                            mapRef.current?.flyTo([Number(ed.latitud), Number(ed.longitud)], 18);
-                                            // Modificamos el marker seleccionado para mostrar que es un cubículo de profesor
-                                            setSelectedMarker({
-                                                ...ed, 
-                                                type: 'profesor',
-                                                profesorNombre: p.usuario?.nombre,
-                                                departamento: p.departamento,
-                                                cubiculoInfo: `Cubículo ${cubiculo.numero}, Piso ${cubiculo.piso}`
-                                            });
-                                        }
-                                    }
-                                    setSearchTerm('');
-                                }}>
-                                    <p className="font-bold text-gray-800 dark:text-white">{p.usuario?.nombre || 'Profesor'}</p>
-                                    <p className="text-xs text-gray-500">{p.departamento}</p>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
+            <SearchBar
+                searchTerm={searchTerm}
+                setSearchTerm={setSearchTerm}
+                profesoresFiltrados={profesoresFiltrados}
+                canViewProfesores={!!canViewProfesores}
+                onProfesorSelect={(p, cubiculo) => {
+                    const ed = cubiculo.edificio;
+                    if (ed) {
+                        mapRef.current?.flyTo([Number(ed.latitud), Number(ed.longitud)], 18);
+                        setSelectedMarker({
+                            ...ed,
+                            type: 'profesor',
+                            profesorNombre: p.usuario?.nombre,
+                            departamento: p.departamento,
+                            cubiculoInfo: `Cubículo ${cubiculo.numero}, Piso ${cubiculo.piso}`
+                        });
+                    }
+                }}
+            />
 
             <div className="flex-1 relative">
                 <div ref={mapContainerRef} className="h-full w-full" />
@@ -318,7 +301,7 @@ export default function Map() {
                             <X className="w-4 h-4 cursor-pointer" onClick={() => setShowRoutePanel(false)} />
                         </div>
                         <div className="space-y-4">
-                            <select 
+                            <select
                                 className="w-full p-2 border rounded text-sm text-gray-700"
                                 value={routeOrigin || ''}
                                 onChange={(e) => setRouteOrigin(e.target.value === 'user' ? 'user' : Number(e.target.value))}
@@ -327,7 +310,7 @@ export default function Map() {
                                 {userLocation && <option value="user" className="text-blue-600 font-bold">📍 Mi ubicación actual</option>}
                                 {edificios.map(e => <option key={e.id_edificio} value={e.id_edificio}>{e.nombre}</option>)}
                             </select>
-                            <select 
+                            <select
                                 className="w-full p-2 border rounded text-sm text-gray-700"
                                 value={routeDestination || ''}
                                 onChange={(e) => setRouteDestination(Number(e.target.value))}
@@ -350,7 +333,7 @@ export default function Map() {
                             <h3 className="font-bold text-blue-900">{selectedMarker.profesorNombre || selectedMarker.nombre}</h3>
                             <X className="w-4 h-4 cursor-pointer text-gray-400" onClick={() => setSelectedMarker(null)} />
                         </div>
-                        
+
                         {selectedMarker.type === 'profesor' ? (
                             <div className="mb-4">
                                 <p className="text-sm font-semibold text-gray-700">{selectedMarker.departamento}</p>
@@ -392,8 +375,8 @@ export default function Map() {
             <footer className="bg-white dark:bg-gray-900 border-t px-4 py-3 text-xs text-gray-500 flex justify-between items-center">
                 <p>&copy; {new Date().getFullYear()} Vexel - UTEQ. AirGuide Project.</p>
                 <div className="flex gap-4 underline">
-                    <a href="https://www.uteq.edu.mx">Portal UTEQ</a>
-                    <a href="https://github.com/luiss811/Airguide">Código Fuente</a>
+                    <a href="https://www.uteq.edu.mx">UTEQ</a>
+                    <a href="https://github.com/luiss811/Airguide">GitHub</a>
                 </div>
             </footer>
         </div>
