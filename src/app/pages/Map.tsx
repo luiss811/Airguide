@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     MapPin, Navigation, Calendar, Building2, Search,
     LogIn, UserCog, Users, LogOut, Route as RouteIcon,
@@ -6,74 +6,38 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
 import logoUTEQ from '../../styles/images/letras_uteq_azul2025.png';
-import L from 'leaflet';
-import 'leaflet-routing-machine';
 import { useEdificios, useEventos, useProfesores } from '../hooks';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { SearchBar } from '../components/SearchBar';
-import 'leaflet/dist/leaflet.css';
-import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api';
 
-// Configuración de iconos por defecto de Leaflet
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-});
+const center = { lat: 20.656333, lng: -100.404745 };
+const containerStyle = { width: '100%', height: '100%' };
 
 // --- ICONOS PERSONALIZADOS ---
-const edificioIcon = new L.Icon({
-    iconUrl: 'data:image/svg+xml;base64,' + btoa(`
+const getIcon = (color: string, stroke: string) => {
+    const svg = `
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">
-      <path fill="#3B82F6" stroke="#1E40AF" stroke-width="2" d="M16 0C7.163 0 0 7.163 0 16c0 8.837 16 26 16 26s16-17.163 16-26C32 7.163 24.837 0 16 0z"/>
+      <path fill="${color}" stroke="${stroke}" stroke-width="2" d="M16 0C7.163 0 0 7.163 0 16c0 8.837 16 26 16 26s16-17.163 16-26C32 7.163 24.837 0 16 0z"/>
       <circle cx="16" cy="16" r="6" fill="white"/>
-    </svg>
-  `),
-    iconSize: [32, 42],
-    iconAnchor: [16, 42],
-    popupAnchor: [0, -42],
-});
-
-const eventoIcon = new L.Icon({
-    iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="42" viewBox="0 0 32 42">
-      <path fill="#10B981" stroke="#059669" stroke-width="2" d="M16 0C7.163 0 0 7.163 0 16c0 8.837 16 26 16 26s16-17.163 16-26C32 7.163 24.837 0 16 0z"/>
-      <circle cx="16" cy="16" r="6" fill="white"/>
-    </svg>
-  `),
-    iconSize: [32, 42],
-    iconAnchor: [16, 42],
-    popupAnchor: [0, -42],
-});
-
-const userLocationIcon = new L.Icon({
-    iconUrl: 'data:image/svg+xml;base64,' + btoa(`
-    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24">
-      <circle cx="12" cy="12" r="8" fill="#3B82F6" fill-opacity="0.3" stroke="#3B82F6" stroke-width="1"/>
-      <circle cx="12" cy="12" r="4" fill="#3B82F6" stroke="white" stroke-width="2"/>
-    </svg>
-  `),
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-});
+    </svg>`;
+    return 'data:image/svg+xml;base64,' + btoa(svg);
+};
 
 export default function Map() {
     const navigate = useNavigate();
     const { user, logout } = useAuth();
-    const { edificios, loading: loadingEdificios } = useEdificios();
+    const { edificios } = useEdificios();
     useEventos();
     const { profesores } = useProfesores();
 
-    const mapRef = useRef<L.Map | null>(null);
-    const mapContainerRef = useRef<HTMLDivElement>(null);
-    const markersRef = useRef<L.Marker[]>([]);
-    const routingControlRef = useRef<any>(null);
+    const { isLoaded, loadError } = useJsApiLoader({
+        id: 'google-map-script',
+        googleMapsApiKey: "AIzaSyBCORaDyk1go3cDfKQNSM9-CS8wv12GSJM"
+    });
 
-    // REFS PARA CAPAS DINÁMICAS
-    const geojsonLayerRef = useRef<L.GeoJSON | null>(null);
-    const userMarkerRef = useRef<L.Marker | null>(null);
+    const [map, setMap] = useState<google.maps.Map | null>(null);
     const watchIdRef = useRef<number | null>(null);
 
     const [searchTerm, setSearchTerm] = useState('');
@@ -81,41 +45,19 @@ export default function Map() {
     const [routeOrigin, setRouteOrigin] = useState<number | 'user' | null>(null);
     const [routeDestination, setRouteDestination] = useState<number | null>(null);
     const [showRoutePanel, setShowRoutePanel] = useState(false);
-    const [userLocation, setUserLocation] = useState<L.LatLng | null>(null);
+    const [userLocation, setUserLocation] = useState<google.maps.LatLngLiteral | null>(null);
     const [geojsonData, setGeojsonData] = useState<any>(null);
 
-    // 1. CARGAR DATOS GEOJSON (Edificios y Caminos Internos)
-    useEffect(() => {
-        const fetchGeoData = async () => {
-            try {
-                const response = await fetch('http://localhost:3000/api/mapa/data');
-                const data = await response.json();
-                setGeojsonData(data);
-            } catch (error) {
-                console.error("Error al cargar capas del mapa:", error);
-            }
-        };
-        fetchGeoData();
-    }, []);
+    const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
+    const [routeInfo, setRouteInfo] = useState<{ duration: string; distance: string } | null>(null);
 
-    // 2. LÓGICA DE GEOLOCALIZACIÓN (Tracking en vivo)
+    // 2. LÓGICA DE GEOLOCALIZACIÓN
     useEffect(() => {
         if (!navigator.geolocation) return;
         watchIdRef.current = navigator.geolocation.watchPosition(
             (position) => {
                 const { latitude, longitude } = position.coords;
-                const latLng = new L.LatLng(latitude, longitude);
-                setUserLocation(latLng);
-                if (mapRef.current) {
-                    if (userMarkerRef.current) {
-                        userMarkerRef.current.setLatLng(latLng);
-                    } else {
-                        userMarkerRef.current = L.marker(latLng, {
-                            icon: userLocationIcon,
-                            zIndexOffset: 1000
-                        }).addTo(mapRef.current).bindPopup("Tu ubicación actual");
-                    }
-                }
+                setUserLocation({ lat: latitude, lng: longitude });
             },
             (err) => console.error("Error GPS:", err),
             { enableHighAccuracy: true }
@@ -124,47 +66,41 @@ export default function Map() {
     }, []);
 
     const centerOnUser = () => {
-        if (mapRef.current && userLocation) mapRef.current.flyTo(userLocation, 18);
+        if (map && userLocation) {
+            map.panTo(userLocation);
+            map.setZoom(18);
+        }
     };
 
-    // 3. INICIALIZAR MAPA BASE
-    useEffect(() => {
-        if (!mapContainerRef.current || mapRef.current) return;
-        const map = L.map(mapContainerRef.current).setView([20.656333, -100.404745], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-        mapRef.current = map;
-        return () => { map.remove(); mapRef.current = null; };
+    const onLoad = useCallback(function callback(mapInstance: google.maps.Map) {
+        setMap(mapInstance);
     }, []);
 
-    // 4. DIBUJAR CAPA GEOJSON (Caminos y Polígonos)
-    useEffect(() => {
-        if (!mapRef.current || !geojsonData) return;
-        if (geojsonLayerRef.current) geojsonLayerRef.current.remove();
+    const onUnmount = useCallback(function callback() {
+        setMap(null);
+    }, []);
 
-        geojsonLayerRef.current = L.geoJSON(geojsonData, {
-            style: (feature) => {
-                const isPath = feature?.properties.type === 'path' || feature?.properties.type === 'footway';
+    // 4. DIBUJAR CAPA GEOJSON
+    useEffect(() => {
+        if (map && geojsonData) {
+            map.data.forEach((feature) => map.data.remove(feature));
+            map.data.addGeoJson(geojsonData);
+            map.data.setStyle((feature) => {
+                const type = feature.getProperty('type');
+                const isPath = type === 'path' || type === 'footway';
                 return {
                     fillColor: isPath ? 'transparent' : '#3B82F6',
                     fillOpacity: isPath ? 0 : 0.1,
-                    color: isPath ? '#94a3b8' : '#3B82F6',
-                    weight: isPath ? 2 : 1,
-                    dashArray: isPath ? '5, 10' : '',
+                    strokeColor: isPath ? '#94a3b8' : '#3B82F6',
+                    strokeWeight: isPath ? 2 : 1,
+                    clickable: false
                 };
-            },
-            onEachFeature: (feature, layer) => {
-                if (feature.properties?.name) {
-                    layer.bindPopup(`<strong>${feature.properties.name}</strong>`);
-                }
-            }
-        }).addTo(mapRef.current);
-    }, [geojsonData]);
+            });
+        }
+    }, [map, geojsonData]);
 
-    // 5. ACTUALIZAR MARCADORES (Pins de Edificios y Eventos)
+    // 5. FILTROS
     const canViewProfesores = user && ['alumno', 'admin', 'rector'].includes(user.rol);
-
     const profesoresFiltrados = canViewProfesores ? profesores.filter(p =>
         p.usuario?.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.departamento?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -178,61 +114,57 @@ export default function Map() {
         return matchesEdificio || (searchTerm !== '' && hasMatchingProfesor);
     });
 
-    useEffect(() => {
-        if (!mapRef.current) return;
-        markersRef.current.forEach(marker => marker.remove());
-        markersRef.current = [];
-
-        edificiosFiltrados.forEach((edificio) => {
-            const marker = L.marker([Number(edificio.latitud), Number(edificio.longitud)], { icon: edificioIcon })
-                .addTo(mapRef.current!)
-                .on('click', () => setSelectedMarker({ ...edificio, type: 'edificio' }));
-            markersRef.current.push(marker);
-        });
-    }, [edificiosFiltrados]);
-
-    // 6. CÁLCULO DE RUTA (Peatonal + GPS)
+    // 6. CÁLCULO DE RUTA
     const calculateRoute = () => {
-        if (!mapRef.current || !routeOrigin || !routeDestination) return;
-        let originPoint: L.LatLng;
-        let originLabel: string;
+        if (!routeOrigin || !routeDestination) {
+            return alert("Por favor selecciona un origen y un destino.");
+        }
+
+        let originCoords: google.maps.LatLngLiteral;
 
         if (routeOrigin === 'user') {
-            if (!userLocation) return alert("Esperando señal GPS...");
-            originPoint = userLocation;
-            originLabel = "Tu ubicación";
+            if (!userLocation) return alert("Esperando señal GPS... asegúrate de dar permisos de ubicación.");
+            originCoords = userLocation;
         } else {
             const originB = edificios.find(e => e.id_edificio === routeOrigin);
             if (!originB) return;
-            originPoint = L.latLng(Number(originB.latitud), Number(originB.longitud));
-            originLabel = originB.nombre;
+            originCoords = { lat: Number(originB.latitud), lng: Number(originB.longitud) };
         }
 
-        const destination = edificios.find(e => e.id_edificio === routeDestination);
-        if (!destination) return;
+        const destB = edificios.find(e => e.id_edificio === routeDestination);
+        if (!destB) return;
+        const destinationCoords = { lat: Number(destB.latitud), lng: Number(destB.longitud) };
 
-        if (routingControlRef.current) mapRef.current.removeControl(routingControlRef.current);
+        if (!window.google) return;
+        const directionsService = new window.google.maps.DirectionsService();
 
-        routingControlRef.current = (L as any).Routing.control({
-            waypoints: [originPoint, L.latLng(Number(destination.latitud), Number(destination.longitud))],
-            router: (L as any).Routing.osrmv1({
-                serviceUrl: 'https://router.project-osrm.org/route/v1',
-                profile: 'foot' // Fuerza ruta por caminos peatonales
-            }),
-            lineOptions: { styles: [{ color: '#10B981', opacity: 0.8, weight: 6 }] },
-            createMarker: (i: number, waypoint: any) =>
-                L.marker(waypoint.latLng).bindPopup(i === 0 ? originLabel : destination.nombre)
-        }).addTo(mapRef.current);
-        setShowRoutePanel(false);
+        directionsService.route(
+            {
+                origin: originCoords,
+                destination: destinationCoords,
+                travelMode: window.google.maps.TravelMode.WALKING
+            },
+            (result, status) => {
+                if (status === window.google.maps.DirectionsStatus.OK && result) {
+                    setDirectionsResponse(result);
+                    const leg = result.routes[0].legs[0];
+                    setRouteInfo({ duration: leg.duration?.text || '', distance: leg.distance?.text || '' });
+                    setShowRoutePanel(false);
+                } else {
+                    alert("Google no encontró una ruta peatonal válida entre estos puntos.");
+                }
+            }
+        );
     };
 
     const clearRoute = () => {
-        if (routingControlRef.current && mapRef.current) {
-            mapRef.current.removeControl(routingControlRef.current);
-            routingControlRef.current = null;
-        }
-        setRouteOrigin(null); setRouteDestination(null);
+        setDirectionsResponse(null);
+        setRouteInfo(null);
+        setRouteOrigin(null);
+        setRouteDestination(null);
     };
+
+    if (loadError) return <div className="h-screen flex items-center justify-center">Error cargando Google Maps</div>;
 
     return (
         <div className="h-screen flex flex-col">
@@ -261,8 +193,9 @@ export default function Map() {
                 canViewProfesores={!!canViewProfesores}
                 onProfesorSelect={(p, cubiculo) => {
                     const ed = cubiculo.edificio;
-                    if (ed) {
-                        mapRef.current?.flyTo([Number(ed.latitud), Number(ed.longitud)], 18);
+                    if (ed && map) {
+                        map.panTo({ lat: Number(ed.latitud), lng: Number(ed.longitud) });
+                        map.setZoom(18);
                         setSelectedMarker({
                             ...ed,
                             type: 'profesor',
@@ -275,12 +208,64 @@ export default function Map() {
             />
 
             <div className="flex-1 relative">
-                <div ref={mapContainerRef} className="h-full w-full" />
+                {isLoaded ? (
+                    <GoogleMap
+                        mapContainerStyle={containerStyle}
+                        center={center}
+                        zoom={15}
+                        onLoad={onLoad}
+                        onUnmount={onUnmount}
+                        options={{ mapTypeControl: false, streetViewControl: false }}
+                    >
+                        {userLocation && (
+                            <Marker
+                                position={userLocation}
+                                icon={{
+                                    path: window.google.maps.SymbolPath.CIRCLE,
+                                    scale: 9,
+                                    fillColor: "#3B82F6",
+                                    fillOpacity: 0.8,
+                                    strokeColor: "white",
+                                    strokeWeight: 2,
+                                }}
+                                title="Tu ubicación actual"
+                            />
+                        )}
+
+                        {edificiosFiltrados.map((edificio) => (
+                            <Marker
+                                key={edificio.id_edificio}
+                                position={{ lat: Number(edificio.latitud), lng: Number(edificio.longitud) }}
+                                icon={{
+                                    url: getIcon('#3B82F6', '#1E40AF'),
+                                    scaledSize: new window.google.maps.Size(32, 42),
+                                    anchor: new window.google.maps.Point(16, 42),
+                                }}
+                                onClick={() => {
+                                    if (map) map.panTo({ lat: Number(edificio.latitud), lng: Number(edificio.longitud) });
+                                    setSelectedMarker({ ...edificio, type: 'edificio' });
+                                }}
+                            />
+                        ))}
+
+                        {directionsResponse && (
+                            <DirectionsRenderer
+                                options={{
+                                    directions: directionsResponse,
+                                    polylineOptions: { strokeColor: '#3B82F6', strokeWeight: 6, strokeOpacity: 0.8 },
+                                    suppressMarkers: true
+                                }}
+                            />
+                        )}
+                    </GoogleMap>
+                ) : (
+                    <div className="h-full flex items-center justify-center">Cargando mapas...</div>
+                )}
 
                 {/* BOTÓN GPS */}
                 <button
                     onClick={centerOnUser}
-                    className="absolute bottom-24 right-4 bg-white text-blue-600 p-3 rounded-full shadow-2xl z-[1000] hover:bg-blue-50 transition-colors"
+                    className="absolute bottom-24 right-4 bg-white text-blue-600 p-3 rounded-full shadow-2xl z-[10] hover:bg-blue-100 transition-colors"
                 >
                     <LocateFixed className="w-6 h-6" />
                 </button>
@@ -288,14 +273,14 @@ export default function Map() {
                 {/* BOTÓN RUTAS */}
                 <button
                     onClick={() => setShowRoutePanel(!showRoutePanel)}
-                    className="absolute bottom-4 right-4 bg-[var(--app-blue)] text-white p-3 rounded-full shadow-xl z-[1000] flex items-center gap-2"
+                    className="absolute bottom-4 right-4 bg-[var(--app-blue)] text-white p-3 rounded-full shadow-xl z-[10] flex items-center gap-2"
                 >
                     <RouteIcon className="w-5 h-5" />
                     {showRoutePanel && <span className="text-sm font-medium">Rutas</span>}
                 </button>
 
                 {showRoutePanel && (
-                    <div className="absolute bottom-20 right-4 bg-white rounded-lg shadow-2xl p-4 w-80 z-[1000]">
+                    <div className="absolute bottom-20 right-4 bg-white rounded-lg shadow-2xl p-4 w-80 z-[10]">
                         <div className="flex justify-between items-center mb-4 text-gray-800">
                             <h3 className="font-bold">Navegación Interna</h3>
                             <X className="w-4 h-4 cursor-pointer" onClick={() => setShowRoutePanel(false)} />
@@ -328,7 +313,7 @@ export default function Map() {
 
                 {/* INFO PANEL */}
                 {selectedMarker && (
-                    <div className="absolute top-4 right-4 bg-white rounded-lg shadow-xl p-4 w-72 z-[1000]">
+                    <div className="absolute top-4 right-4 bg-white rounded-lg shadow-xl p-4 w-72 z-[10]">
                         <div className="flex justify-between items-start mb-2">
                             <h3 className="font-bold text-blue-900">{selectedMarker.profesorNombre || selectedMarker.nombre}</h3>
                             <X className="w-4 h-4 cursor-pointer text-gray-400" onClick={() => setSelectedMarker(null)} />
@@ -356,18 +341,24 @@ export default function Map() {
                 )}
 
                 {/* LEYENDA */}
-                <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[1000]">
+                <div className="absolute bottom-4 left-4 bg-white rounded-lg shadow-lg p-3 z-[10]">
                     <h4 className="text-xs font-semibold mb-2 text-gray-800 border-b pb-1">Leyenda</h4>
                     <div className="space-y-2">
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                             <div className="w-3 h-3 rounded-full bg-blue-500 border border-white" /> Tú (GPS)
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <div className="w-4 h-4 bg-blue-100 border border-blue-500 rounded-sm" /> Edificios
+                            <MapPin className=" w-3 h-3 text-blue-500" />Edificios
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <div className="w-4 h-0.5 border-t-2 border-dashed border-gray-400" /> Pasillos Internos
+                            <div className="w-4 h-0.5 border-t-2 border-blue-400" /> Rutas Internas
                         </div>
+                        {routeInfo && (
+                            <div className="mt-2 pt-2 border-t text-xs text-blue-600 font-semibold">
+                                <div>Distancia: {routeInfo.distance}</div>
+                                <div>Tiempo estimado: {routeInfo.duration}</div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
