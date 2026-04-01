@@ -10,7 +10,7 @@ import { useEdificios, useEventos, useProfesores } from '../hooks';
 import { useAuth } from '../context/AuthContext';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { SearchBar } from '../components/SearchBar';
-import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer } from '@react-google-maps/api';
+import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Polyline } from '@react-google-maps/api';
 
 const center = { lat: 20.656333, lng: -100.404745 };
 const containerStyle = { width: '100%', height: '100%' };
@@ -50,6 +50,11 @@ export default function Map() {
 
     const [directionsResponse, setDirectionsResponse] = useState<google.maps.DirectionsResult | null>(null);
     const [routeInfo, setRouteInfo] = useState<{ duration: string; distance: string } | null>(null);
+    const [autoStitchLines, setAutoStitchLines] = useState<{
+        startLine: google.maps.LatLngLiteral[] | null;
+        endLine: google.maps.LatLngLiteral[] | null;
+    }>({ startLine: null, endLine: null });
+    const [customRouteDetails, setCustomRouteDetails] = useState<google.maps.LatLngLiteral[] | null>(null);
 
     // 2. LÓGICA DE GEOLOCALIZACIÓN
     useEffect(() => {
@@ -115,7 +120,7 @@ export default function Map() {
     });
 
     // 6. CÁLCULO DE RUTA
-    const calculateRoute = () => {
+    const calculateRoute = async () => {
         if (!routeOrigin || !routeDestination) {
             return alert("Por favor selecciona un origen y un destino.");
         }
@@ -135,6 +140,45 @@ export default function Map() {
         if (!destB) return;
         const destinationCoords = { lat: Number(destB.latitud), lng: Number(destB.longitud) };
 
+        // FETCH CUSTOM MANUAL ROUTE SEGMENT (IF ANY)
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+        const token = localStorage.getItem('token');
+        let customPath: google.maps.LatLngLiteral[] | null = null;
+        
+        if (routeOrigin !== 'user') {
+            try {
+                const res = await fetch(`${API_URL}/rutas/find`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        origen_tipo: 'edificio',
+                        origen_id: routeOrigin.toString(),
+                        destino_tipo: 'edificio',
+                        destino_id: routeDestination.toString()
+                    })
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && data.detalles && data.detalles.length > 0) {
+                        customPath = data.detalles.map((d: any) => ({ lat: Number(d.latitud), lng: Number(d.longitud) }));
+                        setCustomRouteDetails(customPath);
+                    } else {
+                        setCustomRouteDetails(null);
+                    }
+                } else {
+                    setCustomRouteDetails(null);
+                }
+            } catch (err) {
+                console.error("Error fetching custom route", err);
+                setCustomRouteDetails(null);
+            }
+        } else {
+            setCustomRouteDetails(null);
+        }
+
         if (!window.google) return;
         const directionsService = new window.google.maps.DirectionsService();
 
@@ -149,6 +193,19 @@ export default function Map() {
                     setDirectionsResponse(result);
                     const leg = result.routes[0].legs[0];
                     setRouteInfo({ duration: leg.duration?.text || '', distance: leg.distance?.text || '' });
+                    
+                    // AUTO-STITCH LAST MILE GAPS
+                    setAutoStitchLines({
+                        startLine: [
+                            originCoords,
+                            { lat: leg.start_location.lat(), lng: leg.start_location.lng() }
+                        ],
+                        endLine: customPath ? null : [
+                            { lat: leg.end_location.lat(), lng: leg.end_location.lng() },
+                            destinationCoords
+                        ]
+                    });
+
                     setShowRoutePanel(false);
                 } else {
                     alert("Google no encontró una ruta peatonal válida entre estos puntos.");
@@ -159,6 +216,8 @@ export default function Map() {
 
     const clearRoute = () => {
         setDirectionsResponse(null);
+        setAutoStitchLines({ startLine: null, endLine: null });
+        setCustomRouteDetails(null);
         setRouteInfo(null);
         setRouteOrigin(null);
         setRouteDestination(null);
@@ -257,6 +316,49 @@ export default function Map() {
                                 }}
                             />
                         )}
+
+                        {autoStitchLines.startLine && (
+                            <Polyline
+                                path={autoStitchLines.startLine}
+                                options={{
+                                    strokeColor: '#3B82F6',
+                                    strokeOpacity: 0,
+                                    strokeWeight: 4,
+                                    icons: [{
+                                        icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
+                                        offset: '0',
+                                        repeat: '20px'
+                                    }]
+                                }}
+                            />
+                        )}
+
+                        {autoStitchLines.endLine && (
+                            <Polyline
+                                path={autoStitchLines.endLine}
+                                options={{
+                                    strokeColor: '#3B82F6',
+                                    strokeOpacity: 0,
+                                    strokeWeight: 4,
+                                    icons: [{
+                                        icon: { path: 'M 0,-1 0,1', strokeOpacity: 1, scale: 3 },
+                                        offset: '0',
+                                        repeat: '20px'
+                                    }]
+                                }}
+                            />
+                        )}
+
+                        {customRouteDetails && (
+                            <Polyline
+                                path={customRouteDetails}
+                                options={{
+                                    strokeColor: '#9333EA', // Purple to distinguish custom precise paths
+                                    strokeOpacity: 0.9,
+                                    strokeWeight: 6,
+                                }}
+                            />
+                        )}
                     </GoogleMap>
                 ) : (
                     <div className="h-full flex items-center justify-center">Cargando mapas...</div>
@@ -351,7 +453,7 @@ export default function Map() {
                             <MapPin className=" w-3 h-3 text-blue-500" />Edificios
                         </div>
                         <div className="flex items-center gap-2 text-xs text-gray-600">
-                            <div className="w-4 h-0.5 border-t-2 border-blue-400" /> Rutas Internas
+                            <div className="w-4 h-0.5 border-t-2 border-blue-400 border-dashed" /> Caminando
                         </div>
                         {routeInfo && (
                             <div className="mt-2 pt-2 border-t text-xs text-blue-600 font-semibold">

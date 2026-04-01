@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { LayoutDashboard, Building2, Calendar, BarChart3, Users, MapPin, Moon, Sun, Settings, UserCheck, UserX } from 'lucide-react';
+import { LayoutDashboard, Building2, Calendar, BarChart3, Users, Moon, Sun, Settings, UserCheck, UserX } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useAnalytics, useUsuarios } from '../../hooks';

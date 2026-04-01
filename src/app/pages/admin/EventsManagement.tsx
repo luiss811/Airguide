@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Calendar, Building2, Search } from 'lucide-react';
-import { useEventos, useEdificios } from '../../hooks';
+import { Plus, Edit, Trash2, Calendar, Building2, Search, Brain } from 'lucide-react';
+import { useEventos, useEdificios, useUsuarios } from '../../hooks';
 import { toast } from 'sonner';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 export default function EventsManagement() {
-  const { eventos, loading, createEvento, updateEvento, deleteEvento, fetchEventos } = useEventos();
+  const { eventos, loading, createEvento, updateEvento, deleteEvento, fetchEventos, trainNeuralNetwork } = useEventos();
   const { edificios } = useEdificios();
+  const { usuarios, fetchUsuarios } = useUsuarios();
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showChartModal, setShowChartModal] = useState(false);
+  const [training, setTraining] = useState(false);
+  const [learningCurve, setLearningCurve] = useState<any[]>([]);
   const [editingEvento, setEditingEvento] = useState<any>(null);
   const [deletingEvento, setDeletingEvento] = useState<any>(null);
   const [formData, setFormData] = useState({
@@ -17,6 +22,8 @@ export default function EventsManagement() {
     fecha_inicio: '',
     fecha_fin: '',
     id_edificio: '',
+    id_creador: '',
+    prioridad_evento: 3,
     publico: true,
     activo: true
   });
@@ -26,27 +33,60 @@ export default function EventsManagement() {
     e.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const handleTrainNetwork = async () => {
+    setTraining(true);
+    try {
+      const result = await trainNeuralNetwork() as any;
+      if (result.success && result.history) {
+        const chartData = result.history.epochs.map((ep: number, i: number) => ({
+          epoch: ep,
+          loss: result.history.loss[i]
+        }));
+        setLearningCurve(chartData);
+        setShowChartModal(true);
+        toast.success('Red neuronal entrenada con éxito');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error al entrenar red neuronal');
+    } finally {
+      setTraining(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
+      const payload: any = {
+        ...formData,
+        id_edificio: parseInt(formData.id_edificio),
+        prioridad_evento: parseInt(formData.prioridad_evento.toString())
+      };
+      if (formData.id_creador) {
+        payload.id_creador = parseInt(formData.id_creador);
+      }
+
       if (editingEvento) {
-        await updateEvento(editingEvento.id_evento, {
-          ...formData,
-          id_edificio: parseInt(formData.id_edificio)
-        });
-        toast.success('Evento actualizado correctamente');
+        const result = await updateEvento(editingEvento.id_evento, payload) as any;
+        if (result.warning) {
+          toast.info(result.warning, { duration: 6000 });
+        } else {
+          toast.success('Evento actualizado correctamente');
+        }
       } else {
-        await createEvento({
-          ...formData,
-          id_edificio: parseInt(formData.id_edificio)
-        });
-        toast.success('Evento creado correctamente');
+        const result = await createEvento(payload) as any;
+
+        if (result.warning) {
+          toast.info(result.warning, { duration: 6000 });
+        } else {
+          toast.success('Evento creado correctamente');
+        }
       }
 
       setShowModal(false);
       resetForm();
       fetchEventos();
+      fetchUsuarios();
     } catch (error: any) {
       toast.error(error.message || 'Error al guardar evento');
     }
@@ -60,6 +100,8 @@ export default function EventsManagement() {
       fecha_inicio: evento.fecha_inicio.split('T')[0],
       fecha_fin: evento.fecha_fin.split('T')[0],
       id_edificio: evento.id_edificio.toString(),
+      id_creador: evento.id_creador ? evento.id_creador.toString() : '',
+      prioridad_evento: evento.prioridad_evento || 3,
       publico: evento.publico,
       activo: evento.activo
     });
@@ -92,6 +134,8 @@ export default function EventsManagement() {
       fecha_inicio: '',
       fecha_fin: '',
       id_edificio: '',
+      id_creador: '',
+      prioridad_evento: 3,
       publico: true,
       activo: true
     });
@@ -124,17 +168,29 @@ export default function EventsManagement() {
           <h2 className="text-2xl font-bold text-[var(--app-text-primary)]">
             Gestión de Eventos
           </h2>
-          <p className="text-sm text-[var(--app-text-secondary)] mt-1">
-            Administra los eventos de la universidad
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-[var(--app-text-secondary)]">
+              Administra los eventos de la universidad
+            </p>
+          </div>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-[var(--app-blue)] text-white rounded-lg hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />
-          Nuevo Evento
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleTrainNetwork}
+            disabled={training}
+            className={`flex items-center gap-2 px-4 py-2 border border-[var(--app-border)] bg-[var(--app-hover)] text-[var(--app-text-primary)] rounded-lg hover:bg-[var(--app-border)] transition-colors ${training ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <Brain className={`w-4 h-4 text-purple-500 ${training ? 'animate-pulse' : ''}`} />
+            {training ? 'Entrenando...' : 'Entrenar Neurona gestora de eventos'}
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--app-blue)] text-white rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />
+            Nuevo Evento
+          </button>
+        </div>
       </div>
 
       {/* Search */}
@@ -340,10 +396,44 @@ export default function EventsManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                    Creador (Opcional)
+                  </label>
+                  <select
+                    value={formData.id_creador}
+                    onChange={(e) => setFormData({ ...formData, id_creador: e.target.value })}
+                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  >
+                    <option value="">Mi cuenta actual</option>
+                    {usuarios.map((usuario) => (
+                      <option key={usuario.id_usuario} value={usuario.id_usuario}>
+                        {usuario.nombre} ({usuario.rol})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                    Prioridad (1-5)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    required
+                    value={formData.prioridad_evento}
+                    onChange={(e) => setFormData({ ...formData, prioridad_evento: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                     Fecha de Inicio *
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={formData.fecha_inicio}
                     onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
@@ -356,7 +446,7 @@ export default function EventsManagement() {
                     Fecha de Fin *
                   </label>
                   <input
-                    type="date"
+                    type="datetime-local"
                     required
                     value={formData.fecha_fin}
                     onChange={(e) => setFormData({ ...formData, fecha_fin: e.target.value })}
@@ -409,6 +499,46 @@ export default function EventsManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Gráfica IA */}
+      {showChartModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-2xl w-full">
+            <div className="p-6 border-b border-[var(--app-border)] flex justify-between items-center">
+              <h3 className="text-xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-500" />
+                Curva de Aprendizaje (Pérdida/Error)
+              </h3>
+              <button onClick={() => setShowChartModal(false)} className="text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)] hover:bg-[var(--app-hover)] rounded-md px-2">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 h-80">
+              {learningCurve.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={learningCurve}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="epoch" stroke="var(--app-text-secondary)" fontSize={12} label={{ value: 'Época', position: 'insideBottomRight', offset: 0, fill: 'var(--app-text-secondary)' }} />
+                    <YAxis stroke="var(--app-text-secondary)" fontSize={12} label={{ value: 'Error (MSE)', angle: -90, position: 'insideLeft', fill: 'var(--app-text-secondary)' }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'var(--app-card-bg)', borderColor: 'var(--app-border)', color: 'var(--app-text-primary)' }}
+                      itemStyle={{ color: 'var(--app-blue)' }}
+                    />
+                    <Line type="monotone" dataKey="loss" name="Pérdida" stroke="var(--app-blue)" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-[var(--app-text-secondary)]">No hay datos disponibles</div>
+              )}
+            </div>
+            <div className="p-4 border-t border-[var(--app-border)] bg-[var(--app-hover)] rounded-b-lg">
+              <p className="text-sm text-[var(--app-text-secondary)]">
+                La gráfica muestra cómo la red de TensorFlow ha ajustado sus pesos a través de las diferentes épocas, minimizando el error (MSE). Una curva descendente significa que el modelo está aprendiendo exitosamente dónde ubicar los eventos.
+              </p>
+            </div>
           </div>
         </div>
       )}

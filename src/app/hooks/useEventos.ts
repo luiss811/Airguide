@@ -11,6 +11,8 @@ export interface Evento {
   id_edificio: number;
   publico: boolean;
   activo: boolean;
+  id_creador?: number;
+  prioridad_evento?: number;
   edificio?: {
     id_edificio: number;
     nombre: string;
@@ -86,6 +88,25 @@ export function useEventos(autoFetch = true) {
     return updatedEvento;
   };
 
+  const trainNeuralNetwork = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) throw new Error('No autorizado');
+
+    const response = await fetch(`${API_URL}/eventos/entrenar-neurona`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error || 'Error al entrenar la red neuronal');
+    }
+
+    return await response.json();
+  };
+
   const deleteEvento = async (id: number) => {
     const token = localStorage.getItem('token');
     if (!token) throw new Error('No autorizado');
@@ -119,5 +140,6 @@ export function useEventos(autoFetch = true) {
     createEvento,
     updateEvento,
     deleteEvento,
+    trainNeuralNetwork,
   };
 }
