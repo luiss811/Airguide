@@ -10,7 +10,6 @@ import EventsManagement from './pages/admin/EventsManagement';
 import EdificiosManagement from './pages/admin/EdificiosManagement';
 import SalonesManagement from './pages/admin/SalonesManagement';
 import Analytics from './pages/admin/Analytics';
-import MapView from './pages/MapView';
 import ProfesoresManagement from './pages/admin/ProfesoresManagement';
 import UsuariosManagement from './pages/admin/UsuariosManagement';
 import VerifyTwoFactor from './pages/VerifyTwoFactor';
