@@ -455,6 +455,9 @@ export default function Map() {
                         <div className="flex items-center gap-2 text-xs text-gray-600">
                             <div className="w-4 h-0.5 border-t-2 border-blue-400 border-dashed" /> Caminando
                         </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <div className="w-4 h-1 bg-[#9333EA]" /> Camino Alterno (Interno)
+                        </div>
                         {routeInfo && (
                             <div className="mt-2 pt-2 border-t text-xs text-blue-600 font-semibold">
                                 <div>Distancia: {routeInfo.distance}</div>
