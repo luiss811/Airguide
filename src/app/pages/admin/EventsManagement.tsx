@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, Calendar, Building2, Search, Brain, QrCode } from 'lucide-react';
+import { Plus, Edit, Trash2, Calendar, Building2, Search, Brain, QrCode, Download } from 'lucide-react';
 import { useEventos, useEdificios, useUsuarios } from '../../hooks';
 import { useAuth } from '../../context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { jsPDF } from 'jspdf';
 
 export default function EventsManagement() {
   const { eventos, loading, createEvento, updateEvento, deleteEvento, fetchEventos, trainNeuralNetwork } = useEventos();
@@ -42,7 +43,9 @@ export default function EventsManagement() {
     prioridad_evento: 3,
     total_invitados: 0,
     publico: true,
-    activo: true
+    activo: true,
+    es_de_paga: false,
+    precio: 0
   });
 
   const eventosFiltrados = eventos.filter(e =>
@@ -78,7 +81,9 @@ export default function EventsManagement() {
         ...formData,
         id_edificio: parseInt(formData.id_edificio),
         prioridad_evento: parseInt(formData.prioridad_evento.toString()),
-        total_invitados: parseInt(formData.total_invitados.toString()) || 0
+        total_invitados: parseInt(formData.total_invitados.toString()) || 0,
+        es_de_paga: formData.es_de_paga,
+        precio: formData.es_de_paga ? parseFloat(formData.precio.toString()) : null
       };
       if (formData.id_creador) {
         payload.id_creador = parseInt(formData.id_creador);
@@ -122,7 +127,9 @@ export default function EventsManagement() {
       prioridad_evento: evento.prioridad_evento || 3,
       total_invitados: evento.total_invitados || 0,
       publico: evento.publico,
-      activo: evento.activo
+      activo: evento.activo,
+      es_de_paga: evento.es_de_paga || false,
+      precio: evento.precio ? parseFloat(evento.precio.toString()) : 0
     });
     setShowModal(true);
   };
@@ -157,7 +164,9 @@ export default function EventsManagement() {
       prioridad_evento: 3,
       total_invitados: 0,
       publico: true,
-      activo: true
+      activo: true,
+      es_de_paga: false,
+      precio: 0
     });
     setEditingEvento(null);
   };
@@ -178,6 +187,94 @@ export default function EventsManagement() {
     const now = new Date();
     const inicio = new Date(evento.fecha_inicio);
     return inicio > now && evento.activo;
+  };
+
+  const downloadEventPdf = (evento: any) => {
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const primaryColor = [59, 130, 246]; // #3b82f6 (blue)
+      const textColor = [17, 24, 39]; // #111827
+      const secondaryTextColor = [107, 114, 128]; // #6b7280
+
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(0, 0, 210, 40, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text('AIRGUIDE - EVENTO', 15, 25);
+
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.setFontSize(20);
+      doc.text(evento.nombre, 15, 55);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(secondaryTextColor[0], secondaryTextColor[1], secondaryTextColor[2]);
+      doc.text('Detalles y registro de asistencia del evento', 15, 62);
+
+      doc.setDrawColor(229, 231, 235);
+      doc.line(15, 67, 195, 67);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      
+      doc.text('Ubicacion:', 15, 77);
+      doc.setFont('helvetica', 'normal');
+      doc.text(evento.edificio?.nombre || 'Sin edificio', 45, 77);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Fecha Inicio:', 15, 85);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date(evento.fecha_inicio).toLocaleString('es-MX'), 45, 85);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Fecha Fin:', 15, 93);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date(evento.fecha_fin).toLocaleString('es-MX'), 45, 93);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Costo:', 15, 101);
+      doc.setFont('helvetica', 'normal');
+      doc.text(evento.es_de_paga ? `$${parseFloat(evento.precio).toFixed(2)} MXN` : 'Gratuito', 45, 101);
+
+      if (evento.descripcion) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Descripcion:', 15, 110);
+        doc.setFont('helvetica', 'normal');
+        const splitDesc = doc.splitTextToSize(evento.descripcion, 180);
+        doc.text(splitDesc, 15, 116);
+      }
+
+      const qrValue = `${window.location.origin}/eventos/${evento.id_evento}/confirmar`;
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('ESCANEA EL CODIGO QR PARA REGISTRARTE', 105, 140, { align: 'center' });
+        doc.addImage(img, 'PNG', 65, 148, 80, 80);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(secondaryTextColor[0], secondaryTextColor[1], secondaryTextColor[2]);
+        doc.text('AirGuide - Sistema de Localizacion de Interiores', 105, 240, { align: 'center' });
+        doc.text(`Enlace: ${qrValue}`, 105, 245, { align: 'center' });
+
+        doc.save(`Detalles_Evento_${evento.id_evento}.pdf`);
+        toast.success('Boleto/Flyer PDF descargado con éxito');
+      };
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrValue)}`;
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al generar el PDF del evento.');
+    }
   };
 
   return (
@@ -329,6 +426,15 @@ export default function EventsManagement() {
                       {evento.publico && (
                         <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 w-fit">
                           Público
+                        </span>
+                      )}
+                      {evento.es_de_paga ? (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 w-fit">
+                          ${parseFloat(evento.precio).toFixed(2)} MXN
+                        </span>
+                      ) : (
+                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 w-fit">
+                          Gratuito
                         </span>
                       )}
                     </div>
@@ -504,6 +610,39 @@ export default function EventsManagement() {
                 </div>
               </div>
 
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-b border-[var(--app-border)] py-4 my-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="es_de_paga"
+                    checked={formData.es_de_paga}
+                    onChange={(e) => setFormData({ ...formData, es_de_paga: e.target.checked })}
+                    className="w-4 h-4 text-[var(--app-blue)] rounded focus:ring-[var(--app-blue)]"
+                  />
+                  <label htmlFor="es_de_paga" className="text-sm font-semibold text-[var(--app-text-primary)]">
+                    Evento de paga
+                  </label>
+                </div>
+
+                {formData.es_de_paga && (
+                  <div>
+                    <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1">
+                      Precio ($ MXN) *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="0.01"
+                      required
+                      value={formData.precio}
+                      onChange={(e) => setFormData({ ...formData, precio: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                      placeholder="Ej: 150.00"
+                    />
+                  </div>
+                )}
+              </div>
+
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-2">
                   <input
@@ -640,14 +779,14 @@ export default function EventsManagement() {
       {/* Modal QR Code */}
       {showQrModal && qrEvento && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-sm w-full p-6 text-center">
+          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-sm w-full p-6 text-center border border-[var(--app-border)]">
             <h3 className="text-lg font-bold text-[var(--app-text-primary)] mb-2">
-              QR de Asistencia
+              QR de Asistencia y Registro
             </h3>
-            <p className="text-sm text-[var(--app-text-secondary)] mb-6">
+            <p className="text-sm font-bold text-[var(--app-blue)] truncate mb-4">
               {qrEvento.nombre}
             </p>
-            <div className="bg-white p-4 rounded-xl inline-block shadow-sm">
+            <div className="bg-white p-4 rounded-xl inline-block shadow-sm mb-4">
               <QRCodeSVG 
                 value={`${window.location.origin}/eventos/${qrEvento.id_evento}/confirmar`}
                 size={200}
@@ -656,10 +795,25 @@ export default function EventsManagement() {
                 level={"H"}
               />
             </div>
-            <div className="mt-6">
+            
+            {/* Event Summary Details inside QR Modal */}
+            <div className="text-left text-xs bg-[var(--app-hover)] p-3 rounded-lg border border-[var(--app-border)] space-y-1 mb-6 text-[var(--app-text-primary)]">
+              <p><strong>Ubicación:</strong> {qrEvento.edificio?.nombre || 'Sin edificio'}</p>
+              <p><strong>Tipo:</strong> {qrEvento.es_de_paga ? `De Paga ($${parseFloat(qrEvento.precio).toFixed(2)} MXN)` : 'Gratuito'}</p>
+              <p><strong>Inicio:</strong> {new Date(qrEvento.fecha_inicio).toLocaleString('es-MX')}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => downloadEventPdf(qrEvento)}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--app-blue)] hover:bg-opacity-90 text-white rounded-lg transition-all w-full font-semibold cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                Descargar Flyer PDF
+              </button>
               <button
                 onClick={() => { setShowQrModal(false); setQrEvento(null); }}
-                className="px-4 py-2 bg-[var(--app-hover)] text-[var(--app-text-primary)] rounded-lg hover:bg-opacity-80 transition-all w-full"
+                className="px-4 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] text-[var(--app-text-primary)] rounded-lg hover:bg-opacity-80 transition-all w-full cursor-pointer"
               >
                 Cerrar
               </button>

@@ -88,12 +88,12 @@ export default function GestionProfesor() {
     if (!file) return;
 
     if (file.type !== 'application/pdf') {
-      toast.error('Por favor selecciona únicamente archivos formato PDF');
+      toast.error('Por favor selecciona únicamente archivos PDF');
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
-      toast.error('El archivo excede el tamaño máximo permitido (5MB)');
+      toast.error('El archivo es demasiado pesado. El tamaño máximo permitido es 5MB');
       return;
     }
 
@@ -103,7 +103,7 @@ export default function GestionProfesor() {
     reader.onload = () => {
       const result = reader.result as string;
       setHorarioPdf(result);
-      toast.success('Horario PDF cargado localmente. Guarda los cambios para subirlo.');
+      toast.success('PDF cargado. Guarda los cambios para subirlo.');
     };
     reader.onerror = () => {
       toast.error('Error al leer el archivo PDF');
@@ -195,7 +195,7 @@ export default function GestionProfesor() {
       <div className="flex h-96 items-center justify-center">
         <div className="flex flex-col items-center gap-3">
           <div className="w-10 h-10 border-4 border-[var(--app-blue)] border-t-transparent rounded-full animate-spin" />
-          <span className="text-[var(--app-text-secondary)] font-medium">Cargando perfil docente...</span>
+          <span className="text-[var(--app-text-secondary)] font-medium">Cargando perfil...</span>
         </div>
       </div>
     );
@@ -221,7 +221,7 @@ export default function GestionProfesor() {
           <div className="rounded-xl border border-[var(--app-border)] p-6 space-y-4 shadow-sm" style={{ background: 'var(--app-card-bg)' }}>
             <h3 className="text-lg font-bold flex items-center gap-2" style={{ color: 'var(--app-text-primary)' }}>
               <Briefcase className="w-5 h-5 text-[var(--app-blue)]" />
-              Estado y Disponibilidad
+              Disponibilidad
             </h3>
 
             <div className="flex items-center justify-between p-4 rounded-lg bg-[var(--app-hover)] border border-[var(--app-border)]">
@@ -230,7 +230,7 @@ export default function GestionProfesor() {
                   Estatus de Docente
                 </p>
                 <p className="text-xs" style={{ color: 'var(--app-text-secondary)' }}>
-                  Indica a tus alumnos si te encuentras activo y localizable.
+                  Indica a tus alumnos si te encuentras disponible.
                 </p>
               </div>
               <button
@@ -268,7 +268,7 @@ export default function GestionProfesor() {
               Horario de Clases (PDF)
             </h3>
             <p className="text-xs" style={{ color: 'var(--app-text-secondary)' }}>
-              Sube tu horario oficial en PDF para que los alumnos lo puedan consultar desde el mapa. (Máximo 5MB).
+              Sube tu horario en formato PDF para que los alumnos lo puedan consultar desde el mapa. (Máximo 5MB).
             </p>
 
             {!horarioPdf ? (
@@ -342,13 +342,13 @@ export default function GestionProfesor() {
               Detalles de Cubículo
             </h3>
             <p className="text-xs" style={{ color: 'var(--app-text-secondary)' }}>
-              Edita la ubicación física del espacio donde atiendes alumnos.
+              Edita la ubicación física de tu cubículo.
             </p>
 
             <div className="space-y-4">
               <div>
                 <label htmlFor="edificio" className="block text-xs font-semibold mb-1" style={{ color: 'var(--app-text-primary)' }}>
-                  Edificio *
+                  Edificio*
                 </label>
                 <select
                   id="edificio"
@@ -382,7 +382,7 @@ export default function GestionProfesor() {
                 </div>
                 <div>
                   <label htmlFor="numero" className="block text-xs font-semibold mb-1" style={{ color: 'var(--app-text-primary)' }}>
-                    Número *
+                    Número*
                   </label>
                   <input
                     id="numero"

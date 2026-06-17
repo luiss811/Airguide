@@ -18,6 +18,7 @@ import EventConfirmation from "./pages/EventConfirmation";
 import GestionProfesor from "./pages/profesor/GestionProfesor";
 import PerfilProfesor from "./pages/profesor/PerfilProfesor";
 import EventsManagementProfesor from "./pages/profesor/EventsManagementProfesor";
+import TicketVerification from "./pages/TicketVerification";
 
 
 const isAuthenticated = () => {
@@ -78,6 +79,10 @@ export const router = createBrowserRouter([
   {
     path: "/eventos/:id/confirmar",
     element: <EventConfirmation />,
+  },
+  {
+    path: "/eventos/ticket/:id_invitado/verificar",
+    element: <TicketVerification />,
   },
   {
     path: "/admin",
