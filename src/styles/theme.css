@@ -111,6 +111,20 @@
 }
 
 @theme inline {
+  --color-app-bg: var(--app-bg);
+  --color-app-header-bg: var(--app-header-bg);
+  --color-app-sidebar-bg: var(--app-sidebar-bg);
+  --color-app-card-bg: var(--app-card-bg);
+  --color-app-text-primary: var(--app-text-primary);
+  --color-app-text-secondary: var(--app-text-secondary);
+  --color-app-border: var(--app-border);
+  --color-app-hover: var(--app-hover);
+  --color-app-blue: var(--app-blue);
+  --color-app-blue-light: var(--app-blue-light);
+  --color-app-green: var(--app-green);
+  --color-app-red: var(--app-red);
+  --color-app-shadow: var(--app-shadow);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);

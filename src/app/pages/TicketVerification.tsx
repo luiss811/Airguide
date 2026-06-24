@@ -40,7 +40,7 @@ export default function TicketVerification() {
           setError(data.error || 'Código de boleto inválido o no registrado.');
         }
       } catch (err: any) {
-        setError(err.message || 'Error al conectar con el servidor.');
+        setError(err.message || 'Ocurrio un problema al verificar el boleto.');
       } finally {
         setLoading(false);
       }
@@ -52,10 +52,9 @@ export default function TicketVerification() {
   }, [id_invitado]);
 
   return (
-    <div className="min-h-screen bg-[var(--app-background, #f3f4f6)] flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl border border-gray-100 dark:border-gray-700 max-w-md w-full overflow-hidden transition-all duration-300">
 
-        {/* Header decoration */}
         <div className={`h-3 w-full ${loading
             ? 'bg-blue-500'
             : error
@@ -82,14 +81,13 @@ export default function TicketVerification() {
                 {error}
               </p>
               <div className="w-full border-t border-gray-100 dark:border-gray-700 pt-6">
-                  <Link to="/map" className="inline-flex items-center justify-center w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-white font-semibold rounded-xl transition-all" style={{ color: 'var(--app-text-secondary)' }}>
+                <Link to="/map" className="inline-flex items-center justify-center w-full py-3 px-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-app-text-secondary dark:text-white font-semibold rounded-xl transition-all">
                   Ir al Mapa
                 </Link>
               </div>
             </div>
           ) : (
             <div className="flex flex-col">
-              {/* Scan Status Card Header */}
               <div className="flex flex-col items-center text-center mb-6">
                 {result?.yaConfirmado ? (
                   <>
@@ -181,7 +179,7 @@ export default function TicketVerification() {
 
               {/* Back actions */}
               <div className="w-full border-t border-gray-100 dark:border-gray-700 pt-6">
-                <Link to="/map" className="inline-flex items-center justify-center w-full py-3 px-4 bg-gray-900 hover:bg-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 text-white font-semibold rounded-xl transition-all shadow-md">
+                <Link to="/map" className="inline-flex items-center justify-center w-full py-3 px-4 bg-app-blue hover:bg-opacity-95 text-white font-semibold rounded-xl transition-all shadow-md">
                   Aceptar y Continuar
                 </Link>
               </div>

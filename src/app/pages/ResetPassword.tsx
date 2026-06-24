@@ -56,7 +56,7 @@ export default function ResetPassword() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Error al restablecer la contraseña');
+        throw new Error(data.error || 'Ocurrió un problema al restablecer la contraseña');
       }
 
       setSuccess(data.message);

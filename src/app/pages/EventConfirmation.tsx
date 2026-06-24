@@ -244,9 +244,9 @@ export default function EventConfirmation() {
 
   if (loadingEvent) {
     return (
-      <div className="min-h-screen bg-[var(--app-background, #f3f4f6)] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="text-center">
-          <Loader2 className="w-12 h-12 text-[var(--app-blue, #3b82f6)] animate-spin mx-auto mb-4" />
+          <Loader2 className="w-12 h-12 text-app-blue animate-spin mx-auto mb-4" />
           <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Cargando detalles del evento...</h2>
         </div>
       </div>
@@ -255,12 +255,12 @@ export default function EventConfirmation() {
 
   if (error && !eventData) {
     return (
-      <div className="min-h-screen bg-[var(--app-background, #f3f4f6)] flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center p-4">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl max-w-sm w-full p-8 text-center border border-red-100 dark:border-red-950/20">
           <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Error de Carga</h2>
           <p className="text-gray-600 dark:text-gray-300 mb-6">{error}</p>
-          <Link to="/map" className="inline-flex items-center text-[var(--app-blue)] hover:underline font-semibold">
+          <Link to="/map" className="inline-flex items-center text-app-blue hover:underline font-semibold">
             <ArrowLeft className="w-4 h-4 mr-2" /> Volver al mapa
           </Link>
         </div>
@@ -269,11 +269,11 @@ export default function EventConfirmation() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--app-background, #f3f4f6)] flex items-center justify-center py-12 px-4">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex items-center justify-center py-12 px-4">
       <div className="bg-white dark:bg-gray-800 rounded-3xl shadow-2xl max-w-lg w-full overflow-hidden transition-all duration-300 border border-gray-100 dark:border-gray-700">
 
         {/* Banner */}
-        <div className="bg-[var(--app-blue, #3b82f6)] p-8 text-white relative">
+        <div className="bg-app-blue p-8 text-white relative">
           <Link to="/map" className="absolute top-6 left-6 text-white/80 hover:text-white transition-colors">
             <ArrowLeft className="w-6 h-6" />
           </Link>
@@ -304,7 +304,7 @@ export default function EventConfirmation() {
 
               {/* Graphic Ticket Component */}
               <div className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-inner text-left relative overflow-hidden mb-6">
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[var(--app-blue)]/5 rounded-full -mr-8 -mt-8" />
+                <div className="absolute top-0 right-0 w-24 h-24 bg-app-blue/5 rounded-full -mr-8 -mt-8" />
 
                 <h3 className="text-base font-extrabold text-gray-950 dark:text-white mb-4 border-b border-gray-200 dark:border-gray-800 pb-2">
                   Pase de Acceso
@@ -347,7 +347,7 @@ export default function EventConfirmation() {
               <div className="flex flex-col gap-2 w-full">
                 <button
                   onClick={() => downloadTicketPdf(registeredGuest, eventData!)}
-                  className="flex items-center justify-center gap-2 py-3 px-4 bg-[var(--app-blue, #3b82f6)] hover:bg-opacity-90 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
+                  className="flex items-center justify-center gap-2 py-3 px-4 bg-app-blue hover:bg-opacity-90 text-white font-bold rounded-xl transition-all shadow-md cursor-pointer"
                 >
                   <Download className="w-5 h-5" />
                   Descargar Boleto PDF
@@ -379,8 +379,8 @@ export default function EventConfirmation() {
                 )}
 
                 {/* Location Summary card */}
-                <div className="flex items-center gap-3 bg-[var(--app-blue)]/5 p-4 rounded-2xl text-left border border-[var(--app-blue)]/10 text-gray-700 dark:text-gray-300">
-                  <MapPin className="w-6 h-6 text-[var(--app-blue)] flex-shrink-0" />
+                <div className="flex items-center gap-3 bg-app-blue/5 p-4 rounded-2xl text-left border border-app-blue/10 text-gray-700 dark:text-gray-300">
+                  <MapPin className="w-6 h-6 text-app-blue flex-shrink-0" />
                   <div>
                     <p className="text-[10px] text-gray-400 uppercase font-bold tracking-wider">Ubicación física</p>
                     <p className="text-sm font-bold text-gray-950 dark:text-white">{eventData?.edificio?.nombre || 'Instalación'}</p>
@@ -399,7 +399,7 @@ export default function EventConfirmation() {
                         required
                         value={nombre}
                         onChange={(e) => setNombre(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] text-sm"
+                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-app-blue text-sm"
                         placeholder="Juan"
                       />
                     </div>
@@ -410,7 +410,7 @@ export default function EventConfirmation() {
                         required
                         value={apellido}
                         onChange={(e) => setApellido(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] text-sm"
+                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-app-blue text-sm"
                         placeholder="Pérez"
                       />
                     </div>
@@ -426,7 +426,7 @@ export default function EventConfirmation() {
                         max="120"
                         value={edad}
                         onChange={(e) => setEdad(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] text-sm"
+                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-app-blue text-sm"
                         placeholder="21"
                       />
                     </div>
@@ -437,7 +437,7 @@ export default function EventConfirmation() {
                         required
                         value={correo}
                         onChange={(e) => setCorreo(e.target.value)}
-                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] text-sm"
+                        className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-app-blue text-sm"
                         placeholder="juan@correo.com"
                       />
                     </div>
@@ -463,7 +463,7 @@ export default function EventConfirmation() {
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('card')}
-                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'card' ? 'border-[var(--app-blue)] bg-[var(--app-blue)]/5 font-bold text-[var(--app-blue)]' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
+                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'card' ? 'border-app-blue bg-app-blue/5 font-bold text-app-blue' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
                         >
                           <CreditCard className="w-4 h-4" />
                           <span className="text-[10px]">Tarjeta</span>
@@ -471,7 +471,7 @@ export default function EventConfirmation() {
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('paypal')}
-                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'paypal' ? 'border-[var(--app-blue)] bg-[var(--app-blue)]/5 font-bold text-[var(--app-blue)]' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
+                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'paypal' ? 'border-app-blue bg-app-blue/5 font-bold text-app-blue' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
                         >
                           <span className="text-xs font-bold tracking-tight italic">PayPal</span>
                           <span className="text-[10px]">Portal</span>
@@ -479,7 +479,7 @@ export default function EventConfirmation() {
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('spei')}
-                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'spei' ? 'border-[var(--app-blue)] bg-[var(--app-blue)]/5 font-bold text-[var(--app-blue)]' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
+                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'spei' ? 'border-app-blue bg-app-blue/5 font-bold text-app-blue' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
                         >
                           <span className="text-xs font-bold">SPEI</span>
                           <span className="text-[10px]">Transfer</span>
@@ -487,7 +487,7 @@ export default function EventConfirmation() {
                         <button
                           type="button"
                           onClick={() => setPaymentMethod('cash')}
-                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'cash' ? 'border-[var(--app-blue)] bg-[var(--app-blue)]/5 font-bold text-[var(--app-blue)]' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
+                          className={`py-2 px-3 border rounded-xl flex flex-col items-center justify-center gap-1 transition-all ${paymentMethod === 'cash' ? 'border-app-blue bg-app-blue/5 font-bold text-app-blue' : 'border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400'}`}
                         >
                           <span className="text-xs font-bold">Efectivo</span>
                           <span className="text-[10px]">OXXO</span>
@@ -521,7 +521,7 @@ export default function EventConfirmation() {
                                 setCardNumber(v);
                               }
                             }}
-                            className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-[var(--app-blue)] text-sm font-mono tracking-widest"
+                            className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-app-blue text-sm font-mono tracking-widest"
                             placeholder="4152 3456 7890 1234"
                           />
                         </div>
@@ -540,7 +540,7 @@ export default function EventConfirmation() {
                                 }
                                 setCardExpiry(v);
                               }}
-                              className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-[var(--app-blue)] text-sm font-mono"
+                              className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-app-blue text-sm font-mono"
                               placeholder="12/28"
                             />
                           </div>
@@ -551,7 +551,7 @@ export default function EventConfirmation() {
                               maxLength={4}
                               value={cardCvv}
                               onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, ''))}
-                              className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-[var(--app-blue)] text-sm font-mono"
+                              className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-app-blue text-sm font-mono"
                               placeholder="123"
                             />
                           </div>
@@ -563,7 +563,7 @@ export default function EventConfirmation() {
                             type="text"
                             value={cardHolder}
                             onChange={(e) => setCardHolder(e.target.value)}
-                            className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-[var(--app-blue)] text-sm"
+                            className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-app-blue text-sm"
                             placeholder="TITULAR DE LA TARJETA"
                           />
                         </div>
@@ -582,7 +582,7 @@ export default function EventConfirmation() {
                 <button
                   type="submit"
                   disabled={registering || processingPayment}
-                  className="w-full py-3.5 px-4 bg-[var(--app-blue, #3b82f6)] hover:bg-opacity-95 text-white font-extrabold rounded-xl transition-all disabled:opacity-50 flex justify-center items-center cursor-pointer shadow-md text-sm"
+                  className="w-full py-3.5 px-4 bg-app-blue hover:bg-opacity-95 text-white font-extrabold rounded-xl transition-all disabled:opacity-50 flex justify-center items-center cursor-pointer shadow-md text-sm"
                 >
                   {registering || processingPayment ? (
                     <>
