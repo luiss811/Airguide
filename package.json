@@ -9,6 +9,7 @@
   },
   "type": "module",
   "scripts": {
+    "test:coverage": "vitest run --coverage --passWithNoTests",
     "build": "vite build",
     "dev": "vite"
   },
@@ -77,10 +78,13 @@
     "@tailwindcss/vite": "4.1.12",
     "@types/react": "^19.2.14",
     "@vitejs/plugin-react": "4.7.0",
+    "@vitest/coverage-v8": "^4.1.9",
+    "jsdom": "^27.0.1",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "react-router": "7.13.0",
     "tailwindcss": "4.1.12",
-    "vite": "6.3.5"
+    "vite": "6.3.5",
+    "vitest": "^4.1.9"
   }
 }

@@ -29,8 +29,8 @@ export default function ProfesoresManagement() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [editingProfesor, setEditingProfesor] = useState<any | null>(null);
-  const [deletingProfesor, setDeletingProfesor] = useState<any | null>(null);
+  const [editingProfesor, setEditingProfesor] = useState<any>(null);
+  const [deletingProfesor, setDeletingProfesor] = useState<any>(null);
   const [formData, setFormData] = useState({
     id_usuario: '',
     departamento: '',
@@ -102,7 +102,7 @@ export default function ProfesoresManagement() {
     return errors;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     const errors = validateForm();
@@ -116,12 +116,12 @@ export default function ProfesoresManagement() {
     try {
       const data: any = {
         departamento: formData.departamento.trim() || null,
-        id_cubiculo: formData.id_cubiculo ? parseInt(formData.id_cubiculo) : null,
+        id_cubiculo: formData.id_cubiculo ? Number.parseInt(formData.id_cubiculo) : null,
         activo: formData.activo
       };
 
       if (!editingProfesor) {
-        data.id_usuario = parseInt(formData.id_usuario);
+        data.id_usuario = Number.parseInt(formData.id_usuario);
       }
 
       if (editingProfesor) {
@@ -167,6 +167,13 @@ export default function ProfesoresManagement() {
         </div>
       </div>
     );
+  }
+
+  let submitButtonText = 'Crear';
+  if (submitting) {
+    submitButtonText = 'Guardando...';
+  } else if (editingProfesor) {
+    submitButtonText = 'Actualizar';
   }
 
   return (
@@ -382,10 +389,11 @@ export default function ProfesoresManagement() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {!editingProfesor && (
                   <div>
-                    <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
+                    <label htmlFor="id_usuario" className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
                       Seleccionar Usuario *
                     </label>
                     <select
+                      id="id_usuario"
                       value={formData.id_usuario}
                       onChange={(e) => setFormData({ ...formData, id_usuario: e.target.value })}
                       className={`w-full px-3 py-2 bg-[var(--app-hover)] border rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] ${
@@ -406,11 +414,12 @@ export default function ProfesoresManagement() {
                 )}
                 {editingProfesor && (
                   <div>
-                    <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
+                    <label htmlFor="edit_usuario" className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
                       Usuario
                     </label>
                     <input
                       type="text"
+                      id="edit_usuario"
                       disabled
                       value={editingProfesor.usuario?.nombre || 'Nombre no disponible'}
                       className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-secondary)] opacity-70 cursor-not-allowed"
@@ -419,11 +428,12 @@ export default function ProfesoresManagement() {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
+                  <label htmlFor="departamento" className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
                     Departamento *
                   </label>
                   <input
                     type="text"
+                    id="departamento"
                     value={formData.departamento}
                     onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
                     className={`w-full px-3 py-2 bg-[var(--app-hover)] border rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)] ${
@@ -437,10 +447,11 @@ export default function ProfesoresManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
+                <label htmlFor="id_cubiculo" className="block text-sm font-medium text-[var(--app-text-primary)] mb-2">
                   Cubículo Asignado
                 </label>
                 <select
+                  id="id_cubiculo"
                   value={formData.id_cubiculo}
                   onChange={(e) => setFormData({ ...formData, id_cubiculo: e.target.value })}
                   className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
@@ -482,7 +493,7 @@ export default function ProfesoresManagement() {
                   className="px-4 py-2 bg-[var(--app-blue)] text-white rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
                   disabled={submitting}
                 >
-                  {submitting ? 'Guardando...' : editingProfesor ? 'Actualizar' : 'Crear'}
+                  {submitButtonText}
                 </button>
               </div>
             </form>

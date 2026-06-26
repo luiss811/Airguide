@@ -105,9 +105,9 @@ export default function AdminDashboard() {
             Acciones Rápidas
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {quickActions.map((action, index) => (
+            {quickActions.map((action) => (
               <button
-                key={index}
+                key={action.title}
                 onClick={() => navigate(action.path)}
                 className="bg-[var(--app-card-bg)] border border-[var(--app-border)] rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all text-left group"
               >

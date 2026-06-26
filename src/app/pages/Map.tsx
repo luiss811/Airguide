@@ -89,39 +89,20 @@ function buildGraph(paths: Array<{ id: number; tipo: string; path: google.maps.L
     return { nodes, edges };
 }
 
-function findShortestPath(
-    graph: Graph,
-    start: google.maps.LatLngLiteral,
-    end: google.maps.LatLngLiteral
-): google.maps.LatLngLiteral[] | null {
-    if (graph.nodes.size === 0) return null;
-
-    // Find closest nodes in graph to start and end points
-    let startKey = '';
-    let startMinDist = Infinity;
-    let endKey = '';
-    let endMinDist = Infinity;
-
-    for (const [key, node] of graph.nodes.entries()) {
-        const distToStart = getDistance(node, start);
-        if (distToStart < startMinDist) {
-            startMinDist = distToStart;
-            startKey = key;
-        }
-
-        const distToEnd = getDistance(node, end);
-        if (distToEnd < endMinDist) {
-            endMinDist = distToEnd;
-            endKey = key;
+function findClosestNode(nodes: Map<string, GraphNode>, target: google.maps.LatLngLiteral): { key: string; distance: number } {
+    let closestKey = '';
+    let minDist = Infinity;
+    for (const [key, node] of nodes.entries()) {
+        const dist = getDistance(node, target);
+        if (dist < minDist) {
+            minDist = dist;
+            closestKey = key;
         }
     }
+    return { key: closestKey, distance: minDist };
+}
 
-    // If either point is too far (> 300m) from any path, we fall back to Google Maps
-    if (startMinDist > 300 || endMinDist > 300) {
-        return null;
-    }
-
-    // Dijkstra's algorithm
+function runDijkstra(graph: Graph, startKey: string, endKey: string): { previous: Map<string, string | null>; distance: number } {
     const distances = new Map<string, number>();
     const previous = new Map<string, string | null>();
     const queue = new Set<string>();
@@ -163,12 +144,31 @@ function findShortestPath(
         }
     }
 
-    if (distances.get(endKey) === Infinity) {
+    return { previous, distance: distances.get(endKey) || Infinity };
+}
+
+function findShortestPath(
+    graph: Graph,
+    start: google.maps.LatLngLiteral,
+    end: google.maps.LatLngLiteral
+): google.maps.LatLngLiteral[] | null {
+    if (graph.nodes.size === 0) return null;
+
+    const startNode = findClosestNode(graph.nodes, start);
+    const endNode = findClosestNode(graph.nodes, end);
+
+    if (startNode.distance > 300 || endNode.distance > 300) {
+        return null;
+    }
+
+    const { previous, distance } = runDijkstra(graph, startNode.key, endNode.key);
+
+    if (distance === Infinity) {
         return null;
     }
 
     const path: google.maps.LatLngLiteral[] = [];
-    let curr: string | null = endKey;
+    let curr: string | null = endNode.key;
     while (curr !== null) {
         const node = graph.nodes.get(curr)!;
         path.unshift({ lat: node.lat, lng: node.lng });
@@ -239,17 +239,21 @@ export default function MapPage() {
                 const res = await fetch(`${API_URL}/mapa/data`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data && data.features) {
+                    if (data?.features) {
                         const paths = data.features
-                            .filter((f: any) => f.properties && f.properties.type !== 'building')
-                            .map((f: any) => ({
-                                id: f.properties.id,
-                                tipo: f.properties.type,
-                                path: f.geometry.coordinates.map((coord: [number, number]) => ({
+                            .filter((f: any) => f.properties?.type !== 'building')
+                            .map((f: any) => {
+                                const coordinates = f.geometry?.coordinates || [];
+                                const pathPoints = coordinates.map((coord: [number, number]) => ({
                                     lat: coord[1],
                                     lng: coord[0]
-                                }))
-                            }));
+                                }));
+                                return {
+                                    id: f.properties?.id,
+                                    tipo: f.properties?.type,
+                                    path: pathPoints
+                                };
+                            });
                         setCaminosGeograficos(paths);
                     }
                 }
@@ -276,7 +280,10 @@ export default function MapPage() {
     }, []);
 
     const toggleHeatmap = async () => {
-        if (!showHeatmap) {
+        if (showHeatmap) {
+            setShowHeatmap(false);
+            setHeatmapRoutes([]);
+        } else {
             try {
                 const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
                 toast.info("Analizando datos de todas las rutas...", { duration: 3000 });
@@ -291,9 +298,6 @@ export default function MapPage() {
             } catch {
                 toast.error("No se pudo cargar el modelo de congestión. Intenta de nuevo más tarde.");
             }
-        } else {
-            setShowHeatmap(false);
-            setHeatmapRoutes([]);
         }
     };
 
@@ -311,7 +315,144 @@ export default function MapPage() {
         );
         return matchesEdificio || (searchTerm !== '' && hasMatchingProfesor);
     });
-    // CÁLCULO DE RUTA
+    // CALCULO DE RUTA
+    const calculateGraphRoute = (originCoords: google.maps.LatLngLiteral, destinationCoords: google.maps.LatLngLiteral): boolean => {
+        if (caminosGeograficos && caminosGeograficos.length > 0) {
+            const graph = buildGraph(caminosGeograficos);
+            const path = findShortestPath(graph, originCoords, destinationCoords);
+            if (path) {
+                setCaminosRoutePath(path);
+
+                let totalDist = 0;
+                for (let i = 0; i < path.length - 1; i++) {
+                    totalDist += getDistance(path[i], path[i + 1]);
+                }
+                const distStr = totalDist >= 1000 ? `${(totalDist / 1000).toFixed(1)} km` : `${totalDist.toFixed(0)} m`;
+                const durationMin = Math.ceil((totalDist / 1.3) / 60);
+                const durStr = `${durationMin} min`;
+
+                setRouteInfo({ duration: durStr, distance: distStr });
+                setDirectionsResponse(null);
+                setCustomRouteDetails(null);
+                setIsCongested(false);
+                setAutoStitchLines({ startLine: null, endLine: null });
+
+                setShowRoutePanel(false);
+                return true;
+            }
+        }
+        return false;
+    };
+
+    const fetchCustomPath = async (originId: number, destinationId: number): Promise<google.maps.LatLngLiteral[] | null> => {
+        const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+        const token = localStorage.getItem('token');
+        try {
+            const res = await fetch(`${API_URL}/rutas/find`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                },
+                body: JSON.stringify({
+                    origen_tipo: 'edificio',
+                    origen_id: originId.toString(),
+                    destino_tipo: 'edificio',
+                    destino_id: destinationId.toString()
+                })
+            });
+            if (res.ok) {
+                const data = await res.json();
+                if (data?.detalles?.length > 0) {
+                    const customPath = data.detalles.map((d: any) => ({ lat: Number(d.latitud), lng: Number(d.longitud) }));
+                    setCustomRouteDetails(customPath);
+
+                    try {
+                        const aiRes = await fetch(`${API_URL}/rutas/check-congestion`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id_ruta: data.id_ruta })
+                        });
+                        if (aiRes.ok) {
+                            const aiData = await aiRes.json();
+
+                            if (aiData.congested) {
+                                toast.error(`Alto Flujo Detectado (Riesgo ${(aiData.score * 100).toFixed(0)}%). Sugerimos tomar vías alternas si tiene prisa.`, { duration: 8000 });
+                                setIsCongested(true);
+                            } else {
+                                setIsCongested(false);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error al verificar congestión', e);
+                    }
+                    return customPath;
+                }
+            }
+        } catch (err) {
+            console.error("Error find custom route:", err);
+        }
+        setCustomRouteDetails(null);
+        setIsCongested(false);
+        return null;
+    };
+
+    const calculateGoogleMapsRoute = (
+        originCoords: google.maps.LatLngLiteral,
+        destinationCoords: google.maps.LatLngLiteral,
+        customPath: google.maps.LatLngLiteral[] | null
+    ) => {
+        if (!globalThis.google) return;
+        const directionsService = new globalThis.google.maps.DirectionsService();
+
+        let googleOrigin = originCoords;
+        let googleDestination = destinationCoords;
+        let isCustomPathAtOrigin = false;
+
+        if (customPath && customPath.length > 0) {
+            const distToOrigin = Math.pow(customPath[0].lat - originCoords.lat, 2) + Math.pow(customPath[0].lng - originCoords.lng, 2);
+            const distToDest = Math.pow(customPath.at(-1)!.lat - destinationCoords.lat, 2) + Math.pow(customPath.at(-1)!.lng - destinationCoords.lng, 2);
+
+            if (distToOrigin < distToDest) {
+                isCustomPathAtOrigin = true;
+                googleOrigin = customPath.at(-1)!;
+            } else {
+                googleDestination = customPath[0];
+            }
+        }
+
+        directionsService.route(
+            {
+                origin: googleOrigin,
+                destination: googleDestination,
+                travelMode: globalThis.google.maps.TravelMode.WALKING
+            },
+            (result, status) => {
+                if (status === globalThis.google.maps.DirectionsStatus.OK && result) {
+                    setDirectionsResponse(result);
+                    const leg = result.routes[0].legs[0];
+                    setRouteInfo({ duration: leg.duration?.text || '', distance: leg.distance?.text || '' });
+                    setCaminosRoutePath(null);
+
+                    setAutoStitchLines({
+                        startLine: isCustomPathAtOrigin ? null : [
+                            originCoords,
+                            { lat: leg.start_location.lat(), lng: leg.start_location.lng() }
+                        ],
+                        endLine: (!isCustomPathAtOrigin && customPath) ? null : [
+                            { lat: leg.end_location.lat(), lng: leg.end_location.lng() },
+                            destinationCoords
+                        ]
+                    });
+
+                    setShowRoutePanel(false);
+                } else {
+                    toast.error("Google Maps no encontró una ruta peatonal válida entre estos puntos.");
+                }
+            }
+        );
+    };
+
     const calculateRoute = async () => {
         if (!routeOrigin || !routeDestination) {
             toast.error("Por favor selecciona un origen y un destino.");
@@ -336,146 +477,21 @@ export default function MapPage() {
         if (!destB) return;
         const destinationCoords = { lat: Number(destB.latitud), lng: Number(destB.longitud) };
 
-        // PRIORIDAD: caminos_geograficos pathfinding
-        if (caminosGeograficos && caminosGeograficos.length > 0) {
-            const graph = buildGraph(caminosGeograficos);
-            const path = findShortestPath(graph, originCoords, destinationCoords);
-            if (path) {
-                setCaminosRoutePath(path);
+        // 1. Prioridad: ruta en caminos geográficos locales
+        const foundLocal = calculateGraphRoute(originCoords, destinationCoords);
+        if (foundLocal) return;
 
-                let totalDist = 0;
-                for (let i = 0; i < path.length - 1; i++) {
-                    totalDist += getDistance(path[i], path[i + 1]);
-                }
-                const distStr = totalDist >= 1000 ? `${(totalDist / 1000).toFixed(1)} km` : `${totalDist.toFixed(0)} m`;
-                const durationMin = Math.ceil((totalDist / 1.3) / 60);
-                const durStr = `${durationMin} min`;
-
-                setRouteInfo({ duration: durStr, distance: distStr });
-                setDirectionsResponse(null);
-                setCustomRouteDetails(null);
-                setIsCongested(false);
-                setAutoStitchLines({ startLine: null, endLine: null });
-
-                setShowRoutePanel(false);
-                return;
-            }
-        }
-
-        // FALLBACK: Google Maps / Custom routes
-        const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
-        const token = localStorage.getItem('token');
+        // 2. Fallback: buscar ruta custom en base de datos
         let customPath: google.maps.LatLngLiteral[] | null = null;
-        
-        if (routeOrigin !== 'user') {
-            try {
-                const res = await fetch(`${API_URL}/rutas/find`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-                    },
-                    body: JSON.stringify({
-                        origen_tipo: 'edificio',
-                        origen_id: routeOrigin.toString(),
-                        destino_tipo: 'edificio',
-                        destino_id: routeDestination.toString()
-                    })
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    if (data && data.detalles && data.detalles.length > 0) {
-                        customPath = data.detalles.map((d: any) => ({ lat: Number(d.latitud), lng: Number(d.longitud) }));
-                        setCustomRouteDetails(customPath);
-
-                        try {
-                            const aiRes = await fetch(`${API_URL}/rutas/check-congestion`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ id_ruta: data.id_ruta })
-                            });
-                            if (aiRes.ok) {
-                                const aiData = await aiRes.json();
-
-                                if (aiData.congested) {
-                                    toast.error(`Alto Flujo Detectado (Riesgo ${(aiData.score * 100).toFixed(0)}%). Sugerimos tomar vías alternas si tiene prisa.`, { duration: 8000 });
-                                    setIsCongested(true);
-                                } else {
-                                    setIsCongested(false);
-                                }
-                            }
-                        } catch (e) {
-                            console.error('Error al verificar congestión', e);
-                        }
-
-                    } else {
-                        setCustomRouteDetails(null);
-                        setIsCongested(false);
-                    }
-                } else {
-                    setCustomRouteDetails(null);
-                    setIsCongested(false);
-                }
-            } catch (err) {
-                setCustomRouteDetails(null);
-                setIsCongested(false);
-            }
-        } else {
+        if (routeOrigin === 'user') {
             setCustomRouteDetails(null);
             setIsCongested(false);
+        } else {
+            customPath = await fetchCustomPath(routeOrigin, routeDestination);
         }
 
-        if (!window.google) return;
-        const directionsService = new window.google.maps.DirectionsService();
-
-        let googleOrigin = originCoords;
-        let googleDestination = destinationCoords;
-        let isCustomPathAtOrigin = false;
-
-        if (customPath && customPath.length > 0) {
-            // Se calcula si el customPath comienza más cerca del Origen o del Destino
-            const distToOrigin = Math.pow(customPath[0].lat - originCoords.lat, 2) + Math.pow(customPath[0].lng - originCoords.lng, 2);
-            const distToDest = Math.pow(customPath[customPath.length - 1].lat - destinationCoords.lat, 2) + Math.pow(customPath[customPath.length - 1].lng - destinationCoords.lng, 2);
-
-            if (distToOrigin < distToDest) {
-                isCustomPathAtOrigin = true;
-                googleOrigin = customPath[customPath.length - 1]; // Iniciar en el final de nuestro tramo manual hacia afuera
-            } else {
-                googleDestination = customPath[0]; // Terminar en el inicio de nuestro tramo manual interno
-            }
-        }
-
-        directionsService.route(
-            {
-                origin: googleOrigin,
-                destination: googleDestination,
-                travelMode: window.google.maps.TravelMode.WALKING
-            },
-            (result, status) => {
-                if (status === window.google.maps.DirectionsStatus.OK && result) {
-                    setDirectionsResponse(result);
-                    const leg = result.routes[0].legs[0];
-                    setRouteInfo({ duration: leg.duration?.text || '', distance: leg.distance?.text || '' });
-                    setCaminosRoutePath(null);
-                    
-                    // AUTO-STITCH LAST MILE GAPS
-                    setAutoStitchLines({
-                        startLine: isCustomPathAtOrigin ? null : [
-                            originCoords,
-                            { lat: leg.start_location.lat(), lng: leg.start_location.lng() }
-                        ],
-                        endLine: (!isCustomPathAtOrigin && customPath) ? null : [
-                            { lat: leg.end_location.lat(), lng: leg.end_location.lng() },
-                            destinationCoords
-                        ]
-                    });
-
-                    setShowRoutePanel(false);
-                } else {
-                    toast.error("Google Maps no encontró una ruta peatonal válida entre estos puntos.");
-                }
-            }
-        );
+        // 3. Fallback: Google Maps directions
+        calculateGoogleMapsRoute(originCoords, destinationCoords, customPath);
     };
 
     const clearRoute = () => {
@@ -489,6 +505,119 @@ export default function MapPage() {
         setRouteDestination(null);
         setShowHeatmap(false);
         setHeatmapRoutes([]);
+    };
+
+    const renderEventsCarousel = () => {
+        const currentEventos = activeTab === 'curso' ? eventosEnCurso : eventosProximos;
+        if (currentEventos.length === 0) {
+            return (
+                <div className="flex flex-col items-center justify-center py-12 text-center text-[var(--app-text-secondary)] space-y-3 bg-[var(--app-hover)] rounded-2xl p-6">
+                    <Calendar className="w-8 h-8 text-[var(--app-text-secondary)] opacity-50" />
+                    <div>
+                        <p className="font-semibold text-sm text-[var(--app-text-primary)]">Sin eventos</p>
+                        <p className="text-xs">No hay eventos registrados en esta categoría.</p>
+                    </div>
+                </div>
+            );
+        }
+
+        const badgeClass = activeTab === 'curso'
+            ? 'bg-red-100 text-red-700 dark:bg-red-955 dark:text-red-300'
+            : 'bg-blue-100 text-blue-700 dark:bg-blue-955 dark:text-blue-300';
+
+        const labelText = activeTab === 'curso' ? 'En Curso' : 'Próximo';
+
+        return (
+            <div className="w-full relative px-10">
+                <Carousel className="w-full relative" opts={{ align: "start" }}>
+                    <CarouselContent>
+                        {currentEventos.map((evento) => (
+                            <CarouselItem key={evento.id_evento} className="basis-full">
+                                <div className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between h-[320px]">
+                                    <div>
+                                        <div className="flex justify-between items-center mb-2">
+                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${badgeClass}`}>
+                                                {labelText}
+                                            </span>
+                                            {evento.prioridad_evento && (
+                                                <span className="text-[10px] text-[var(--app-text-secondary)]">Prioridad: {evento.prioridad_evento}</span>
+                                            )}
+                                        </div>
+                                        <h3 className="font-bold text-[var(--app-text-primary)] text-base line-clamp-1 mb-1">{evento.nombre}</h3>
+                                        <p className="text-xs text-[var(--app-text-secondary)] line-clamp-3 mb-4">{evento.descripcion || 'Sin descripción disponible.'}</p>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        <div className="space-y-1.5 text-xs text-[var(--app-text-secondary)]">
+                                            <div className="flex items-center gap-2">
+                                                <Clock className="w-3.5 h-3.5 text-[var(--app-blue)]" />
+                                                <span>
+                                                    {new Date(evento.fecha_inicio).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} • {new Date(evento.fecha_inicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                            </div>
+                                            {evento.edificio && (
+                                                <div className="flex items-center gap-2">
+                                                    <MapPin className="w-3.5 h-3.5 text-[var(--app-blue)]" />
+                                                    <span className="font-medium text-[var(--app-text-primary)]">{evento.edificio.nombre}</span>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {evento.edificio && (
+                                            <div className="flex flex-col gap-2">
+                                                <div className="flex gap-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            if (map && evento.edificio) {
+                                                                map.panTo({ lat: Number(evento.edificio.latitud), lng: Number(evento.edificio.longitud) });
+                                                                map.setZoom(18);
+                                                                setSelectedMarker({
+                                                                    ...evento.edificio,
+                                                                    type: 'edificio',
+                                                                    nombre: evento.edificio.nombre,
+                                                                    descripcion: `Edificio del evento: ${evento.nombre}. ${evento.descripcion || ''}`
+                                                                });
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-[var(--app-hover)] hover:bg-[var(--app-border)] text-[var(--app-text-primary)] text-[11px] font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <Eye className="w-3.5 h-3.5" /> Ver en mapa
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            if (evento.edificio) {
+                                                                setRouteDestination(evento.id_edificio);
+                                                                setRouteOrigin('user');
+                                                                setShowRoutePanel(true);
+                                                                toast.info(`Calculando ruta hacia el ${evento.edificio.nombre}...`);
+                                                                setTimeout(() => {
+                                                                    calculateRoute();
+                                                                }, 100);
+                                                            }
+                                                        }}
+                                                        className="flex-1 bg-app-blue hover:bg-blue-600 text-white text-[11px] font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                                                    >
+                                                        <Navigation className="w-3.5 h-3.5" /> Cómo llegar
+                                                    </button>
+                                                </div>
+                                                <button
+                                                    onClick={() => navigate(`/eventos/${evento.id_evento}/confirmar`)}
+                                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
+                                                >
+                                                    <ClipboardCheck className="w-3.5 h-3.5" /> Confirmar Asistencia
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </CarouselItem>
+                        ))}
+                    </CarouselContent>
+                    <CarouselPrevious className="absolute size-8 rounded-full top-1/2 -left-8 -translate-y-1/2" />
+                    <CarouselNext className="absolute size-8 rounded-full top-1/2 -right-8 -translate-y-1/2" />
+                </Carousel>
+            </div>
+        );
     };
     // EVENTOS FILTRADOS Y ORDENADOS
     const now = new Date();
@@ -592,108 +721,7 @@ export default function MapPage() {
 
                     {/* Carrusel de Eventos */}
                     <div className="flex-1 flex flex-col justify-center min-h-0 py-4">
-                        {(activeTab === 'curso' ? eventosEnCurso : eventosProximos).length > 0 ? (
-                            <div className="w-full relative px-10">
-                                <Carousel className="w-full relative" opts={{ align: "start" }}>
-                                    <CarouselContent>
-                                        {(activeTab === 'curso' ? eventosEnCurso : eventosProximos).map((evento) => (
-                                            <CarouselItem key={evento.id_evento} className="basis-full">
-                                                <div className="bg-[var(--app-bg)] border border-[var(--app-border)] rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow relative overflow-hidden flex flex-col justify-between h-[320px]">
-                                                    <div>
-                                                        <div className="flex justify-between items-center mb-2">
-                                                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${activeTab === 'curso'
-                                                                ? 'bg-red-100 text-red-700 dark:bg-red-955 dark:text-red-300'
-                                                                : 'bg-blue-100 text-blue-700 dark:bg-blue-955 dark:text-blue-300'
-                                                                }`}>
-                                                                {activeTab === 'curso' ? 'En Curso' : 'Próximo'}
-                                                            </span>
-                                                            {evento.prioridad_evento && (
-                                                                <span className="text-[10px] text-[var(--app-text-secondary)]">Prioridad: {evento.prioridad_evento}</span>
-                                                            )}
-                                                        </div>
-                                                        <h3 className="font-bold text-[var(--app-text-primary)] text-base line-clamp-1 mb-1">{evento.nombre}</h3>
-                                                        <p className="text-xs text-[var(--app-text-secondary)] line-clamp-3 mb-4">{evento.descripcion || 'Sin descripción disponible.'}</p>
-                                                    </div>
-
-                                                    <div className="space-y-3">
-                                                        <div className="space-y-1.5 text-xs text-[var(--app-text-secondary)]">
-                                                            <div className="flex items-center gap-2">
-                                                                <Clock className="w-3.5 h-3.5 text-[var(--app-blue)]" />
-                                                                <span>
-                                                                    {new Date(evento.fecha_inicio).toLocaleDateString('es-MX', { day: 'numeric', month: 'short' })} • {new Date(evento.fecha_inicio).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
-                                                            </div>
-                                                            {evento.edificio && (
-                                                                <div className="flex items-center gap-2">
-                                                                    <MapPin className="w-3.5 h-3.5 text-[var(--app-blue)]" />
-                                                                    <span className="font-medium text-[var(--app-text-primary)]">{evento.edificio.nombre}</span>
-                                                                </div>
-                                                            )}
-                                                        </div>
-
-                                                        {evento.edificio && (
-                                                            <div className="flex flex-col gap-2">
-                                                                <div className="flex gap-2">
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            if (map && evento.edificio) {
-                                                                                map.panTo({ lat: Number(evento.edificio.latitud), lng: Number(evento.edificio.longitud) });
-                                                                                map.setZoom(18);
-                                                                                setSelectedMarker({
-                                                                                    ...evento.edificio,
-                                                                                    type: 'edificio',
-                                                                                    nombre: evento.edificio.nombre,
-                                                                                    descripcion: `Edificio del evento: ${evento.nombre}. ${evento.descripcion || ''}`
-                                                                                });
-                                                                            }
-                                                                        }}
-                                                                        className="flex-1 bg-[var(--app-hover)] hover:bg-[var(--app-border)] text-[var(--app-text-primary)] text-[11px] font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                                                                    >
-                                                                        <Eye className="w-3.5 h-3.5" /> Ver en mapa
-                                                                    </button>
-                                                                    <button
-                                                                        onClick={() => {
-                                                                            if (evento.edificio) {
-                                                                                setRouteDestination(evento.id_edificio);
-                                                                                setRouteOrigin('user');
-                                                                                setShowRoutePanel(true);
-                                                                                toast.info(`Calculando ruta hacia el ${evento.edificio.nombre}...`);
-                                                                                setTimeout(() => {
-                                                                                    calculateRoute();
-                                                                                }, 100);
-                                                                            }
-                                                                        }}
-                                                                        className="flex-1 bg-app-blue hover:bg-blue-600 text-white text-[11px] font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                                                                    >
-                                                                        <Navigation className="w-3.5 h-3.5" /> Cómo llegar
-                                                                    </button>
-                                                                </div>
-                                                                <button
-                                                                    onClick={() => navigate(`/eventos/${evento.id_evento}/confirmar`)}
-                                                                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold py-2 rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                                                                >
-                                                                    <ClipboardCheck className="w-3.5 h-3.5" /> Confirmar Asistencia
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            </CarouselItem>
-                                        ))}
-                                    </CarouselContent>
-                                    <CarouselPrevious className="absolute size-8 rounded-full top-1/2 -left-8 -translate-y-1/2" />
-                                    <CarouselNext className="absolute size-8 rounded-full top-1/2 -right-8 -translate-y-1/2" />
-                                </Carousel>
-                            </div>
-                        ) : (
-                            <div className="flex flex-col items-center justify-center py-12 text-center text-[var(--app-text-secondary)] space-y-3 bg-[var(--app-hover)] rounded-2xl p-6">
-                                <Calendar className="w-8 h-8 text-[var(--app-text-secondary)] opacity-50" />
-                                <div>
-                                    <p className="font-semibold text-sm text-[var(--app-text-primary)]">Sin eventos</p>
-                                    <p className="text-xs">No hay eventos registrados en esta categoría.</p>
-                                </div>
-                            </div>
-                        )}
+                        {renderEventsCarousel()}
                     </div>
                 </div>
 
@@ -712,7 +740,7 @@ export default function MapPage() {
                                 <Marker
                                     position={userLocation}
                                     icon={{
-                                        path: window.google.maps.SymbolPath.CIRCLE,
+                                        path: globalThis.google.maps.SymbolPath.CIRCLE,
                                         scale: 9,
                                         fillColor: "#3B82F6",
                                         fillOpacity: 0.8,
@@ -729,8 +757,8 @@ export default function MapPage() {
                                     position={{ lat: Number(edificio.latitud), lng: Number(edificio.longitud) }}
                                     icon={{
                                         url: getIcon('#3B82F6', '#1E40AF'),
-                                        scaledSize: new window.google.maps.Size(30, 40),
-                                        anchor: new window.google.maps.Point(10, 35),
+                                        scaledSize: new globalThis.google.maps.Size(30, 40),
+                                        anchor: new globalThis.google.maps.Point(10, 35),
                                     }}
                                     onClick={() => {
                                         if (map) map.panTo({ lat: Number(edificio.latitud), lng: Number(edificio.longitud) });
@@ -827,11 +855,15 @@ export default function MapPage() {
                             {/* GLOBAL AI HEATMAP */}
                             {showHeatmap && heatmapRoutes.map((h, i) => {
                                 if (!h.path || h.path.length === 0) return null;
-                                // Asignamos color basado en la puntuación ML: >0.7 Rojo, >0.4 Naranja, sino Verde translucido
-                                const color = h.score > 0.7 ? '#EF4444' : h.score > 0.4 ? '#F59E0B' : '#10B981';
+                                let color = '#10B981';
+                                if (h.score > 0.7) {
+                                    color = '#EF4444';
+                                } else if (h.score > 0.4) {
+                                    color = '#F59E0B';
+                                }
                                 return (
                                     <Polyline
-                                        key={i}
+                                        key={`heatmap-route-${i}`}
                                         path={h.path}
                                         options={{
                                             strokeColor: color,

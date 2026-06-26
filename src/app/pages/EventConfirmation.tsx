@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
-import { CheckCircle, XCircle, Loader2, ArrowLeft, Calendar, MapPin, User, Mail, DollarSign, CreditCard, Award, QrCode, Download, ShieldCheck } from 'lucide-react';
+import { CheckCircle, XCircle, Loader2, ArrowLeft, Calendar, MapPin, DollarSign, CreditCard, Award, QrCode, Download, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import { QRCodeSVG } from 'qrcode.react';
@@ -31,6 +31,115 @@ interface GuestDetails {
   monto_pagado: number | null;
 }
 
+const validateCardPayment = (cardNumber: string, cardExpiry: string, cardCvv: string, cardHolder: string) => {
+  if (cardNumber.replace(/\s/g, '').length !== 16) {
+    throw new Error('Número de tarjeta inválido. Debe contener 16 dígitos.');
+  }
+  if (cardExpiry.length !== 5 || !cardExpiry.includes('/')) {
+    throw new Error('Fecha de expiración inválida (MM/AA).');
+  }
+  if (cardCvv.length < 3) {
+    throw new Error('Código CVV inválido.');
+  }
+  if (!cardHolder) {
+    throw new Error('Indica el nombre del titular de la tarjeta.');
+  }
+};
+
+const downloadTicketPdf = (guest: GuestDetails, event: EventoDetails) => {
+  try {
+    const doc = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a6'
+    });
+
+    const primaryColor = event.es_de_paga ? [217, 119, 6] : [59, 130, 246]; // Amber for paid, blue for free
+    const textColor = [17, 24, 39];
+    const lightBg = [249, 250, 251];
+
+    // Header Banner
+    doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+    doc.rect(0, 0, 105, 25, 'F');
+
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    doc.text('BOLETO DE ENTRADA', 52.5, 10, { align: 'center' });
+    doc.setFontSize(7.5);
+    doc.text(event.es_de_paga ? 'PAGO COMPROBADO' : 'REGISTRO GRATUITO', 52.5, 17, { align: 'center' });
+
+    // Body container
+    doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
+    doc.rect(5, 30, 95, 110, 'F');
+
+    doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.text(event.nombre.slice(0, 38), 10, 39);
+
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.text(`Ubicacion: ${event.edificio?.nombre || 'Sin edificio'}`, 10, 45);
+    doc.text(`Fecha: ${new Date(event.fecha_inicio).toLocaleString('es-MX')}`, 10, 50);
+
+    doc.setDrawColor(209, 213, 219);
+    doc.setLineDashPattern([1.5, 1.5], 0);
+    doc.line(10, 55, 95, 55);
+
+    // Guest details
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.text('Invitado:', 10, 62);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${guest.nombre} ${guest.apellido}`, 30, 62);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Correo:', 10, 68);
+    doc.setFont('helvetica', 'normal');
+    doc.text(guest.correo, 30, 68);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Edad:', 10, 74);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${guest.edad} anos`, 30, 74);
+
+    if (event.es_de_paga) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Monto:', 10, 80);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`$${Number.parseFloat(event.precio as string).toFixed(2)} MXN`, 30, 80);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Metodo:', 10, 86);
+      doc.setFont('helvetica', 'normal');
+      doc.text(guest.metodo_pago || 'Confirmado', 30, 86);
+    }
+
+    doc.setLineDashPattern([0, 0], 0);
+    doc.line(10, 92, 95, 92);
+
+    const ticketUrl = `${globalThis.location.origin}/eventos/ticket/${guest.id_invitado}/verificar`;
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = () => {
+      doc.addImage(img, 'PNG', 37.5, 96, 30, 30);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(5.5);
+      doc.setTextColor(107, 114, 128);
+      doc.text('Muestra este codigo en el acceso para registrar asistencia', 52.5, 134, { align: 'center' });
+
+      doc.save(`Boleto_AirGuide_${guest.id_invitado}.pdf`);
+      toast.success('Boleto descargado exitosamente');
+    };
+    img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketUrl)}`;
+  } catch (err) {
+    console.error(err);
+    toast.error('Error al generar PDF del boleto');
+  }
+};
+
 export default function EventConfirmation() {
   const { id } = useParams();
   const [eventData, setEventData] = useState<EventoDetails | null>(null);
@@ -53,6 +162,21 @@ export default function EventConfirmation() {
   const [cardHolder, setCardHolder] = useState('');
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  const getSubmitButtonContent = () => {
+    if (registering || processingPayment) {
+      return (
+        <>
+          <Loader2 className="w-5 h-5 mr-2.5 animate-spin" />
+          {processingPayment ? 'Procesando Pago Seguro...' : 'Registrando asistencia...'}
+        </>
+      );
+    }
+    if (eventData?.es_de_paga) {
+      return `Pagar $${Number.parseFloat(eventData.precio as string).toFixed(2)} MXN y Registrarse`;
+    }
+    return 'Confirmar Asistencia';
+  };
+
   useEffect(() => {
     const fetchEvent = async () => {
       try {
@@ -70,7 +194,7 @@ export default function EventConfirmation() {
     if (id) fetchEvent();
   }, [id]);
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!nombre || !apellido || !edad || !correo) {
       toast.error('Por favor, completa todos los campos del registro.');
@@ -92,18 +216,7 @@ export default function EventConfirmation() {
 
         // Validation rules for simulated credit card checkout
         if (paymentMethod === 'card') {
-          if (cardNumber.replace(/\s/g, '').length !== 16) {
-            throw new Error('Número de tarjeta inválido. Debe contener 16 dígitos.');
-          }
-          if (cardExpiry.length !== 5 || !cardExpiry.includes('/')) {
-            throw new Error('Fecha de expiración inválida (MM/AA).');
-          }
-          if (cardCvv.length < 3) {
-            throw new Error('Código CVV inválido.');
-          }
-          if (!cardHolder) {
-            throw new Error('Indica el nombre del titular de la tarjeta.');
-          }
+          validateCardPayment(cardNumber, cardExpiry, cardCvv, cardHolder);
           payMethodStr = 'Tarjeta de Crédito/Débito';
         } else if (paymentMethod === 'paypal') {
           payMethodStr = 'PayPal';
@@ -114,7 +227,7 @@ export default function EventConfirmation() {
         }
 
         isPaid = true;
-        paidAmt = parseFloat(eventData.precio as string);
+        paidAmt = Number.parseFloat(eventData.precio as string);
         setProcessingPayment(false);
       }
 
@@ -125,7 +238,7 @@ export default function EventConfirmation() {
         body: JSON.stringify({
           nombre,
           apellido,
-          edad: parseInt(edad),
+          edad: Number.parseInt(edad),
           correo,
           pagado: isPaid,
           metodo_pago: payMethodStr,
@@ -145,100 +258,6 @@ export default function EventConfirmation() {
       setProcessingPayment(false);
     } finally {
       setRegistering(false);
-    }
-  };
-
-  const downloadTicketPdf = (guest: GuestDetails, event: EventoDetails) => {
-    try {
-      const doc = new jsPDF({
-        orientation: 'portrait',
-        unit: 'mm',
-        format: 'a6'
-      });
-
-      const primaryColor = event.es_de_paga ? [217, 119, 6] : [59, 130, 246]; // Amber for paid, blue for free
-      const textColor = [17, 24, 39];
-      const lightBg = [249, 250, 251];
-
-      // Header Banner
-      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
-      doc.rect(0, 0, 105, 25, 'F');
-
-      doc.setTextColor(255, 255, 255);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(13);
-      doc.text('BOLETO DE ENTRADA', 52.5, 10, { align: 'center' });
-      doc.setFontSize(7.5);
-      doc.text(event.es_de_paga ? 'PAGO COMPROBADO' : 'REGISTRO GRATUITO', 52.5, 17, { align: 'center' });
-
-      // Body container
-      doc.setFillColor(lightBg[0], lightBg[1], lightBg[2]);
-      doc.rect(5, 30, 95, 110, 'F');
-
-      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(10);
-      doc.text(event.nombre.slice(0, 38), 10, 39);
-
-      doc.setFont('helvetica', 'normal');
-      doc.setFontSize(7.5);
-      doc.text(`Ubicacion: ${event.edificio?.nombre || 'Sin edificio'}`, 10, 45);
-      doc.text(`Fecha: ${new Date(event.fecha_inicio).toLocaleString('es-MX')}`, 10, 50);
-
-      doc.setDrawColor(209, 213, 219);
-      doc.setLineDashPattern([1.5, 1.5], 0);
-      doc.line(10, 55, 95, 55);
-
-      // Guest details
-      doc.setFont('helvetica', 'bold');
-      doc.setFontSize(8);
-      doc.text('Invitado:', 10, 62);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${guest.nombre} ${guest.apellido}`, 30, 62);
-
-      doc.setFont('helvetica', 'bold');
-      doc.text('Correo:', 10, 68);
-      doc.setFont('helvetica', 'normal');
-      doc.text(guest.correo, 30, 68);
-
-      doc.setFont('helvetica', 'bold');
-      doc.text('Edad:', 10, 74);
-      doc.setFont('helvetica', 'normal');
-      doc.text(`${guest.edad} anos`, 30, 74);
-
-      if (event.es_de_paga) {
-        doc.setFont('helvetica', 'bold');
-        doc.text('Monto:', 10, 80);
-        doc.setFont('helvetica', 'normal');
-        doc.text(`$${parseFloat(event.precio as string).toFixed(2)} MXN`, 30, 80);
-
-        doc.setFont('helvetica', 'bold');
-        doc.text('Metodo:', 10, 86);
-        doc.setFont('helvetica', 'normal');
-        doc.text(guest.metodo_pago || 'Confirmado', 30, 86);
-      }
-
-      doc.setLineDashPattern([0, 0], 0);
-      doc.line(10, 92, 95, 92);
-
-      const ticketUrl = `${window.location.origin}/eventos/ticket/${guest.id_invitado}/verificar`;
-      const img = new Image();
-      img.crossOrigin = 'Anonymous';
-      img.onload = () => {
-        doc.addImage(img, 'PNG', 37.5, 96, 30, 30);
-
-        doc.setFont('helvetica', 'normal');
-        doc.setFontSize(5.5);
-        doc.setTextColor(107, 114, 128);
-        doc.text('Muestra este codigo en el acceso para registrar asistencia', 52.5, 134, { align: 'center' });
-
-        doc.save(`Boleto_AirGuide_${guest.id_invitado}.pdf`);
-        toast.success('Boleto descargado exitosamente');
-      };
-      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(ticketUrl)}`;
-    } catch (err) {
-      console.error(err);
-      toast.error('Error al generar PDF del boleto');
     }
   };
 
@@ -325,14 +344,14 @@ export default function EventConfirmation() {
                   </p>
                   {eventData?.es_de_paga && (
                     <p className="text-sm text-emerald-600 dark:text-emerald-400 font-extrabold flex items-center gap-1">
-                      <ShieldCheck className="w-4 h-4" /> Pagado: ${parseFloat(eventData.precio as string).toFixed(2)} MXN
+                      <ShieldCheck className="w-4 h-4" /> Pagado: ${Number.parseFloat(eventData.precio as string).toFixed(2)} MXN
                     </p>
                   )}
                 </div>
 
                 <div className="flex flex-col items-center justify-center bg-white p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 w-fit mx-auto">
                   <QRCodeSVG
-                    value={`${window.location.origin}/eventos/ticket/${registeredGuest.id_invitado}/verificar`}
+                    value={`${globalThis.location.origin}/eventos/ticket/${registeredGuest.id_invitado}/verificar`}
                     size={130}
                     bgColor={"#ffffff"}
                     fgColor={"#000000"}
@@ -393,8 +412,9 @@ export default function EventConfirmation() {
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Nombre *</label>
+                      <label htmlFor="nombre_asistente" className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Nombre *</label>
                       <input
+                        id="nombre_asistente"
                         type="text"
                         required
                         value={nombre}
@@ -404,8 +424,9 @@ export default function EventConfirmation() {
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Apellido *</label>
+                      <label htmlFor="apellido_asistente" className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Apellido *</label>
                       <input
+                        id="apellido_asistente"
                         type="text"
                         required
                         value={apellido}
@@ -418,8 +439,9 @@ export default function EventConfirmation() {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="col-span-1">
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Edad *</label>
+                      <label htmlFor="edad_asistente" className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Edad *</label>
                       <input
+                        id="edad_asistente"
                         type="number"
                         required
                         min="1"
@@ -431,8 +453,9 @@ export default function EventConfirmation() {
                       />
                     </div>
                     <div className="col-span-2">
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Correo Electrónico *</label>
+                      <label htmlFor="correo_asistente" className="block text-xs font-bold text-gray-500 dark:text-gray-400 mb-1">Correo Electrónico *</label>
                       <input
+                        id="correo_asistente"
                         type="email"
                         required
                         value={correo}
@@ -453,12 +476,12 @@ export default function EventConfirmation() {
                         <span className="font-bold text-gray-950 dark:text-white text-sm">Costo del boleto:</span>
                       </div>
                       <span className="text-lg font-black text-amber-600 dark:text-amber-400">
-                        ${parseFloat(eventData.precio as string).toFixed(2)} MXN
+                        ${Number.parseFloat(eventData.precio as string).toFixed(2)} MXN
                       </span>
                     </div>
 
                     <div className="space-y-3">
-                      <label className="block text-xs font-bold text-gray-500 dark:text-gray-400">Método de Pago</label>
+                      <span className="block text-xs font-bold text-gray-500 dark:text-gray-400">Método de Pago</span>
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         <button
                           type="button"
@@ -501,16 +524,17 @@ export default function EventConfirmation() {
                         <h4 className="text-xs font-extrabold text-gray-400 uppercase">Tarjeta Bancaria (Simulación)</h4>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">NÚMERO DE TARJETA</label>
+                          <label htmlFor="card_number" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">NÚMERO DE TARJETA</label>
                           <input
+                            id="card_number"
                             type="text"
                             maxLength={19}
                             value={cardNumber}
                             onChange={(e) => {
                               // Automatically add spaces to number string
-                              const v = e.target.value.replace(/\s+/g, '').replace(/[^0-9]/gi, '');
+                              const v = e.target.value.replace(/\s+/g, '').replace(/\D/g, '');
                               const matches = v.match(/\d{4,16}/g);
-                              const match = (matches && matches[0]) || '';
+                              const match = matches?.[0] || '';
                               const parts = [];
                               for (let i = 0, len = match.length; i < len; i += 4) {
                                 parts.push(match.substring(i, i + 4));
@@ -528,13 +552,14 @@ export default function EventConfirmation() {
 
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">EXPIRACIÓN (MM/AA)</label>
+                            <label htmlFor="card_expiry" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">EXPIRACIÓN (MM/AA)</label>
                             <input
+                              id="card_expiry"
                               type="text"
                               maxLength={5}
                               value={cardExpiry}
                               onChange={(e) => {
-                                let v = e.target.value.replace(/[^0-9]/g, '');
+                                let v = e.target.value.replace(/\D/g, '');
                                 if (v.length > 2) {
                                   v = v.substring(0, 2) + '/' + v.substring(2, 4);
                                 }
@@ -545,12 +570,13 @@ export default function EventConfirmation() {
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">CVV (SEGURIDAD)</label>
+                            <label htmlFor="card_cvv" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">CVV (SEGURIDAD)</label>
                             <input
+                              id="card_cvv"
                               type="password"
                               maxLength={4}
                               value={cardCvv}
-                              onChange={(e) => setCardCvv(e.target.value.replace(/[^0-9]/g, ''))}
+                              onChange={(e) => setCardCvv(e.target.value.replace(/\D/g, ''))}
                               className="w-full px-3.5 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-800 rounded-xl text-gray-900 dark:text-white focus:outline-none focus:ring-1.5 focus:ring-app-blue text-sm font-mono"
                               placeholder="123"
                             />
@@ -558,8 +584,9 @@ export default function EventConfirmation() {
                         </div>
 
                         <div>
-                          <label className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">NOMBRE EN LA TARJETA</label>
+                          <label htmlFor="card_holder" className="block text-[10px] font-bold text-gray-500 dark:text-gray-400 mb-1">NOMBRE EN LA TARJETA</label>
                           <input
+                            id="card_holder"
                             type="text"
                             value={cardHolder}
                             onChange={(e) => setCardHolder(e.target.value)}
@@ -584,14 +611,7 @@ export default function EventConfirmation() {
                   disabled={registering || processingPayment}
                   className="w-full py-3.5 px-4 bg-app-blue hover:bg-opacity-95 text-white font-extrabold rounded-xl transition-all disabled:opacity-50 flex justify-center items-center cursor-pointer shadow-md text-sm"
                 >
-                  {registering || processingPayment ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2.5 animate-spin" />
-                      {processingPayment ? 'Procesando Pago Seguro...' : 'Registrando asistencia...'}
-                    </>
-                  ) : (
-                    eventData?.es_de_paga ? `Pagar $${parseFloat(eventData.precio as string).toFixed(2)} MXN y Registrarse` : 'Confirmar Asistencia'
-                  )}
+                  {getSubmitButtonContent()}
                 </button>
             </form>
           )}

@@ -16,10 +16,12 @@ export default function PerfilProfesor() {
   const [correo, setCorreo] = useState('');
   const [matricula, setMatricula] = useState('');
 
-  if (user?.rol !== 'profesor') {
-    navigate('/');
-    return null;
-  }
+  // Redirect if not professor
+  useEffect(() => {
+    if (user && user.rol !== 'profesor') {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   // Fetch current user details
   const fetchUserData = async () => {
@@ -50,10 +52,12 @@ export default function PerfilProfesor() {
   };
 
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    if (user?.rol === 'profesor') {
+      fetchUserData();
+    }
+  }, [user]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!nombre.trim() || !correo.trim()) {
@@ -103,6 +107,10 @@ export default function PerfilProfesor() {
       setSaving(false);
     }
   };
+
+  if (!user || user.rol !== 'profesor') {
+    return null;
+  }
 
   if (loading) {
     return (

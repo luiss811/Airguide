@@ -24,15 +24,101 @@ export default function SalonesManagement() {
         s.edificio?.nombre.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const handleSubmit = async (e: React.FormEvent) => {
+    const renderTableBody = () => {
+        if (loading) {
+            return (
+                <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center">
+                        <div className="flex items-center justify-center gap-3">
+                            <div className="w-5 h-5 border-2 border-[var(--app-blue)] border-t-transparent rounded-full animate-spin" />
+                            <span className="text-sm text-[var(--app-text-secondary)]">Cargando...</span>
+                        </div>
+                    </td>
+                </tr>
+            );
+        }
+
+        if (salonesFiltrados.length === 0) {
+            return (
+                <tr>
+                    <td colSpan={7} className="px-6 py-8 text-center text-sm text-[var(--app-text-secondary)]">
+                        No se encontraron salones
+                    </td>
+                </tr>
+            );
+        }
+
+        return salonesFiltrados.map((salon) => (
+            <tr key={salon.id_salon} className="hover:bg-[var(--app-hover)]">
+                <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                            <DoorOpen className="w-8 h-8 text-[var(--app-blue)]" />
+                        </div>
+                        <div>
+                            <div className="text-sm font-medium text-[var(--app-text-primary)]">
+                                {salon.nombre}
+                            </div>
+                        </div>
+                    </div>
+                </td>
+                <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                        <Building2 className="w-4 h-4 text-[var(--app-blue)]" />
+                        <span className="text-sm text-[var(--app-text-primary)]">
+                            {salon.edificio?.nombre || 'Sin edificio'}
+                        </span>
+                    </div>
+                </td>
+                <td className="px-6 py-4">
+                    <span className="capitalize text-sm text-[var(--app-text-primary)]">
+                        {salon.tipo}
+                    </span>
+                </td>
+                <td className="px-6 py-4">
+                    <span className="text-sm text-[var(--app-text-primary)]">
+                        Piso {salon.piso}
+                    </span>
+                </td>
+                <td className="px-6 py-4">
+                    <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${salon.activo
+                        ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                        : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                        }`}>
+                        {salon.activo ? 'Activo' : 'Inactivo'}
+                    </span>
+                </td>
+                <td className="px-6 py-4 text-right text-sm font-medium">
+                    <div className="flex items-center justify-end gap-2">
+                        <button
+                            onClick={() => handleEdit(salon)}
+                            className="p-2 text-[var(--app-blue)] hover:bg-[var(--app-hover)] rounded-lg transition-colors"
+                            title="Editar"
+                        >
+                            <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                            onClick={() => handleDeleteClick(salon)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
+                            title="Eliminar"
+                        >
+                            <Trash2 className="w-4 h-4" />
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        ));
+    };
+
+    const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         try {
             const data = {
                 nombre: formData.nombre,
                 tipo: formData.tipo,
-                id_edificio: parseInt(formData.id_edificio),
-                piso: parseInt(formData.piso),
+                id_edificio: Number.parseInt(formData.id_edificio),
+                piso: Number.parseInt(formData.piso),
                 activo: formData.activo
             };
 
@@ -203,89 +289,13 @@ export default function SalonesManagement() {
                             <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
                                 Estado
                             </th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
+                        <th className="px-6 py-3 text-right text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
                                 Acciones
                             </th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--app-border)]">
-                        {loading ? (
-                            <tr>
-                                <td colSpan={7} className="px-6 py-8 text-center">
-                                    <div className="flex items-center justify-center gap-3">
-                                        <div className="w-5 h-5 border-2 border-[var(--app-blue)] border-t-transparent rounded-full animate-spin" />
-                                        <span className="text-sm text-[var(--app-text-secondary)]">Cargando...</span>
-                                    </div>
-                                </td>
-                            </tr>
-                        ) : salonesFiltrados.length === 0 ? (
-                            <tr>
-                                <td colSpan={7} className="px-6 py-8 text-center text-sm text-[var(--app-text-secondary)]">
-                                    No se encontraron salones
-                                </td>
-                            </tr>
-                        ) : (
-                            salonesFiltrados.map((salon) => (
-                                <tr key={salon.id_salon} className="hover:bg-[var(--app-hover)]">
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex-shrink-0">
-                                                <DoorOpen className="w-8 h-8 text-[var(--app-blue)]" />
-                                            </div>
-                                            <div>
-                                                <div className="text-sm font-medium text-[var(--app-text-primary)]">
-                                                    {salon.nombre}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <Building2 className="w-4 h-4 text-[var(--app-blue)]" />
-                                            <span className="text-sm text-[var(--app-text-primary)]">
-                                                {salon.edificio?.nombre || 'Sin edificio'}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${getTipoColor(salon.tipo)}`}>
-                                            {salon.tipo}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className="text-sm text-[var(--app-text-primary)]">
-                                            Piso {salon.piso}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${salon.activo
-                                            ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
-                                            : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
-                                            }`}>
-                                            {salon.activo ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right text-sm font-medium">
-                                        <div className="flex items-center justify-end gap-2">
-                                            <button
-                                                onClick={() => handleEdit(salon)}
-                                                className="p-2 text-[var(--app-blue)] hover:bg-[var(--app-hover)] rounded-lg transition-colors"
-                                                title="Editar"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleDeleteClick(salon)}
-                                                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
-                                                title="Eliminar"
-                                            >
-                                                <Trash2 className="w-4 h-4" />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
+                        {renderTableBody()}
                     </tbody>
                 </table>
             </div>
@@ -302,11 +312,12 @@ export default function SalonesManagement() {
 
                         <form onSubmit={handleSubmit} className="p-6 space-y-4">
                             <div>
-                                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                                <label htmlFor="nombre" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                                     Nombre del Salón *
                                 </label>
                                 <input
                                     type="text"
+                                    id="nombre"
                                     required
                                     value={formData.nombre}
                                     onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
@@ -316,11 +327,12 @@ export default function SalonesManagement() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                                <label htmlFor="id_edificio" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                                     Edificio *
                                 </label>
                                 <select
                                     required
+                                    id="id_edificio"
                                     value={formData.id_edificio}
                                     onChange={(e) => setFormData({ ...formData, id_edificio: e.target.value })}
                                     className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
@@ -336,10 +348,11 @@ export default function SalonesManagement() {
 
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                                    <label htmlFor="tipo" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                                         Tipo *
                                     </label>
                                     <select
+                                        id="tipo"
                                         value={formData.tipo}
                                         onChange={(e) => setFormData({ ...formData, tipo: e.target.value as any })}
                                         className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
@@ -352,11 +365,12 @@ export default function SalonesManagement() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                                    <label htmlFor="piso" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                                         Piso *
                                     </label>
                                     <input
                                         type="number"
+                                        id="piso"
                                         required
                                         min="1"
                                         value={formData.piso}

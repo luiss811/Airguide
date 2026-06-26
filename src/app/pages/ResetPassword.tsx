@@ -23,7 +23,7 @@ export default function ResetPassword() {
     // We let them use the form anyway but it's prefilled if they came from ForgotPassword
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError('');
     setSuccess('');
@@ -103,12 +103,13 @@ export default function ResetPassword() {
           {!success ? (
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-primary)' }}>
+                <label htmlFor="verification-code" className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-primary)' }}>
                   Código de Verificación
                 </label>
                 <div className="relative">
                   <KeyRound className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--app-text-secondary)' }} />
                   <input
+                    id="verification-code"
                     type="text"
                     value={codigo}
                     onChange={(e) => setCodigo(e.target.value.toUpperCase())}
@@ -121,12 +122,13 @@ export default function ResetPassword() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-primary)' }}>
+                <label htmlFor="new-password" className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-primary)' }}>
                   Nueva Contraseña
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--app-text-secondary)' }} />
                   <input
+                    id="new-password"
                     type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
@@ -138,12 +140,13 @@ export default function ResetPassword() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-primary)' }}>
+                <label htmlFor="confirm-password" className="block text-sm font-medium mb-1" style={{ color: 'var(--app-text-primary)' }}>
                   Confirmar Contraseña
                 </label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: 'var(--app-text-secondary)' }} />
                   <input
+                    id="confirm-password"
                     type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}

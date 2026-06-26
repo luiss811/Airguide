@@ -56,7 +56,7 @@ export default function EventsManagement() {
   const handleTrainNetwork = async () => {
     setTraining(true);
     try {
-      const result = await trainNeuralNetwork() as any;
+      const result = await trainNeuralNetwork();
       if (result.success && result.history) {
         const chartData = result.history.epochs.map((ep: number, i: number) => ({
           epoch: ep,
@@ -73,31 +73,31 @@ export default function EventsManagement() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
       const payload: any = {
         ...formData,
-        id_edificio: parseInt(formData.id_edificio),
-        prioridad_evento: parseInt(formData.prioridad_evento.toString()),
-        total_invitados: parseInt(formData.total_invitados.toString()) || 0,
+        id_edificio: Number.parseInt(formData.id_edificio),
+        prioridad_evento: Number.parseInt(formData.prioridad_evento.toString()),
+        total_invitados: Number.parseInt(formData.total_invitados.toString()) || 0,
         es_de_paga: formData.es_de_paga,
-        precio: formData.es_de_paga ? parseFloat(formData.precio.toString()) : null
+        precio: formData.es_de_paga ? Number.parseFloat(formData.precio.toString()) : null
       };
       if (formData.id_creador) {
-        payload.id_creador = parseInt(formData.id_creador);
+        payload.id_creador = Number.parseInt(formData.id_creador);
       }
 
       if (editingEvento) {
-        const result = await updateEvento(editingEvento.id_evento, payload) as any;
+        const result = await updateEvento(editingEvento.id_evento, payload);
         if (result.warning) {
           toast.info(result.warning, { duration: 6000 });
         } else {
           toast.success('Evento actualizado correctamente');
         }
       } else {
-        const result = await createEvento(payload) as any;
+        const result = await createEvento(payload);
 
         if (result.warning) {
           toast.info(result.warning, { duration: 6000 });
@@ -129,7 +129,7 @@ export default function EventsManagement() {
       publico: evento.publico,
       activo: evento.activo,
       es_de_paga: evento.es_de_paga || false,
-      precio: evento.precio ? parseFloat(evento.precio.toString()) : 0
+      precio: evento.precio ? Number.parseFloat(evento.precio.toString()) : 0
     });
     setShowModal(true);
   };
@@ -189,6 +189,143 @@ export default function EventsManagement() {
     return inicio > now && evento.activo;
   };
 
+  const renderEventStatus = (evento: any) => {
+    if (isEventoActivo(evento)) {
+      return (
+        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 w-fit">
+          En curso
+        </span>
+      );
+    }
+    if (isEventoProximo(evento)) {
+      return (
+        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 w-fit">
+          Próximo
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 w-fit">
+        Finalizado
+      </span>
+    );
+  };
+
+  const renderTableBody = () => {
+    if (loading) {
+      return (
+        <tr>
+          <td colSpan={5} className="px-6 py-8 text-center">
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-5 h-5 border-2 border-[var(--app-blue)] border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-[var(--app-text-secondary)]">Cargando...</span>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    if (eventosFiltrados.length === 0) {
+      return (
+        <tr>
+          <td colSpan={5} className="px-6 py-8 text-center text-sm text-[var(--app-text-secondary)]">
+            No se encontraron eventos
+          </td>
+        </tr>
+      );
+    }
+
+    return eventosFiltrados.map((evento) => (
+      <tr key={evento.id_evento} className="hover:bg-[var(--app-hover)]">
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <Calendar className="w-8 h-8 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-[var(--app-text-primary)]">
+                {evento.nombre}
+              </div>
+              {evento.descripcion && (
+                <div className="text-xs text-[var(--app-text-secondary)] line-clamp-1">
+                  {evento.descripcion}
+                </div>
+              )}
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-[var(--app-blue)]" />
+            <span className="text-sm text-[var(--app-text-primary)]">
+              {evento.edificio?.nombre || 'Sin edificio'}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="text-sm text-[var(--app-text-primary)]">
+            {new Date(evento.fecha_inicio).toLocaleString('es-MX', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            })}
+          </div>
+          <div className="text-xs text-[var(--app-text-secondary)]">
+            hasta {new Date(evento.fecha_fin).toLocaleString('es-MX', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            })}
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex flex-col gap-1">
+            {renderEventStatus(evento)}
+            {evento.es_de_paga ? (
+              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 w-fit">
+                ${Number.parseFloat(evento.precio).toFixed(2)} MXN
+              </span>
+            ) : (
+              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 w-fit">
+                Gratuito
+              </span>
+            )}
+          </div>
+          {evento.total_invitados && evento.total_invitados > 0 ? (
+            <div className="text-xs text-[var(--app-text-secondary)] mt-1">
+              {evento.asistentes_confirmados || 0} / {evento.total_invitados} confirmados
+            </div>
+          ) : null}
+        </td>
+        {!isStudent && (
+          <td className="px-6 py-4 text-right text-sm font-medium">
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => { setQrEvento(evento); setShowQrModal(true); }}
+                className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950 rounded-lg transition-colors"
+                title="Generar QR"
+              >
+                <QrCode className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleEdit(evento)}
+                className="p-2 text-[var(--app-blue)] hover:bg-[var(--app-hover)] rounded-lg transition-colors"
+                title="Editar"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteClick(evento)}
+                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
+                title="Eliminar"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </td>
+        )}
+      </tr>
+    ));
+  };
+
   const downloadEventPdf = (evento: any) => {
     try {
       const doc = new jsPDF({
@@ -242,7 +379,7 @@ export default function EventsManagement() {
       doc.setFont('helvetica', 'bold');
       doc.text('Costo:', 15, 101);
       doc.setFont('helvetica', 'normal');
-      doc.text(evento.es_de_paga ? `$${parseFloat(evento.precio).toFixed(2)} MXN` : 'Gratuito', 45, 101);
+      doc.text(evento.es_de_paga ? `$${Number.parseFloat(evento.precio).toFixed(2)} MXN` : 'Gratuito', 45, 101);
 
       if (evento.descripcion) {
         doc.setFont('helvetica', 'bold');
@@ -252,7 +389,7 @@ export default function EventsManagement() {
         doc.text(splitDesc, 15, 116);
       }
 
-      const qrValue = `${window.location.origin}/eventos/${evento.id_evento}/confirmar`;
+      const qrValue = `${globalThis.location.origin}/eventos/${evento.id_evento}/confirmar`;
       const img = new Image();
       img.crossOrigin = 'Anonymous';
       img.onload = () => {
@@ -351,129 +488,7 @@ export default function EventsManagement() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--app-border)]">
-            {loading ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center">
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="w-5 h-5 border-2 border-[var(--app-blue)] border-t-transparent rounded-full animate-spin" />
-                    <span className="text-sm text-[var(--app-text-secondary)]">Cargando...</span>
-                  </div>
-                </td>
-              </tr>
-            ) : eventosFiltrados.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-sm text-[var(--app-text-secondary)]">
-                  No se encontraron eventos
-                </td>
-              </tr>
-            ) : (
-              eventosFiltrados.map((evento) => (
-                <tr key={evento.id_evento} className="hover:bg-[var(--app-hover)]">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex-shrink-0">
-                        <Calendar className="w-8 h-8 text-green-600 dark:text-green-400" />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium text-[var(--app-text-primary)]">
-                          {evento.nombre}
-                        </div>
-                        {evento.descripcion && (
-                          <div className="text-xs text-[var(--app-text-secondary)] line-clamp-1">
-                            {evento.descripcion}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-[var(--app-blue)]" />
-                      <span className="text-sm text-[var(--app-text-primary)]">
-                        {evento.edificio?.nombre || 'Sin edificio'}
-                      </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-[var(--app-text-primary)]">
-                      {new Date(evento.fecha_inicio).toLocaleString('es-MX', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </div>
-                    <div className="text-xs text-[var(--app-text-secondary)]">
-                      hasta {new Date(evento.fecha_fin).toLocaleString('es-MX', {
-                        day: '2-digit', month: 'short', year: 'numeric',
-                        hour: '2-digit', minute: '2-digit'
-                      })}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
-                      {isEventoActivo(evento) ? (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 w-fit">
-                          En curso
-                        </span>
-                      ) : isEventoProximo(evento) ? (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 w-fit">
-                          Próximo
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 w-fit">
-                          Finalizado
-                        </span>
-                      )}
-                      {evento.publico && (
-                        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 w-fit">
-                          Público
-                        </span>
-                      )}
-                      {evento.es_de_paga ? (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 w-fit">
-                          ${parseFloat(evento.precio).toFixed(2)} MXN
-                        </span>
-                      ) : (
-                        <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 w-fit">
-                          Gratuito
-                        </span>
-                      )}
-                    </div>
-                    {evento.total_invitados && evento.total_invitados > 0 ? (
-                      <div className="text-xs text-[var(--app-text-secondary)] mt-1">
-                        {evento.asistentes_confirmados || 0} / {evento.total_invitados} confirmados
-                      </div>
-                    ) : null}
-                  </td>
-                  {!isStudent && (
-                    <td className="px-6 py-4 text-right text-sm font-medium">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => { setQrEvento(evento); setShowQrModal(true); }}
-                          className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950 rounded-lg transition-colors"
-                          title="Generar QR"
-                        >
-                          <QrCode className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleEdit(evento)}
-                          className="p-2 text-[var(--app-blue)] hover:bg-[var(--app-hover)] rounded-lg transition-colors"
-                          title="Editar"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteClick(evento)}
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
-                          title="Eliminar"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  )}
-                </tr>
-              ))
-            )}
+            {renderTableBody()}
           </tbody>
         </table>
       </div>
@@ -490,11 +505,12 @@ export default function EventsManagement() {
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                <label htmlFor="nombre" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                   Nombre del Evento *
                 </label>
                 <input
                   type="text"
+                  id="nombre"
                   required
                   value={formData.nombre}
                   onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
@@ -504,10 +520,11 @@ export default function EventsManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                <label htmlFor="descripcion" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                   Descripción
                 </label>
                 <textarea
+                  id="descripcion"
                   value={formData.descripcion}
                   onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                   className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
@@ -517,11 +534,12 @@ export default function EventsManagement() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                <label htmlFor="edificio" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                   Edificio *
                 </label>
                 <select
                   required
+                  id="edificio"
                   value={formData.id_edificio}
                   onChange={(e) => setFormData({ ...formData, id_edificio: e.target.value })}
                   className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
@@ -537,10 +555,11 @@ export default function EventsManagement() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  <label htmlFor="creador" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                     Creador (Opcional)
                   </label>
                   <select
+                    id="creador"
                     value={formData.id_creador}
                     onChange={(e) => setFormData({ ...formData, id_creador: e.target.value })}
                     className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
@@ -554,41 +573,44 @@ export default function EventsManagement() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  <label htmlFor="prioridad_evento" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                     Prioridad (1-5)
                   </label>
                   <input
                     type="number"
+                    id="prioridad_evento"
                     min="1"
                     max="5"
                     required
                     value={formData.prioridad_evento}
-                    onChange={(e) => setFormData({ ...formData, prioridad_evento: parseInt(e.target.value) })}
+                    onChange={(e) => setFormData({ ...formData, prioridad_evento: Number.parseInt(e.target.value) })}
                     className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                <label htmlFor="total_invitados" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                   Total de Invitados (0 = Sin límite / Opcional)
                 </label>
                 <input
                   type="number"
+                  id="total_invitados"
                   min="0"
                   value={formData.total_invitados}
-                  onChange={(e) => setFormData({ ...formData, total_invitados: parseInt(e.target.value) })}
+                  onChange={(e) => setFormData({ ...formData, total_invitados: Number.parseInt(e.target.value) })}
                   className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  <label htmlFor="fecha_inicio" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                     Fecha de Inicio *
                   </label>
                   <input
                     type="datetime-local"
+                    id="fecha_inicio"
                     required
                     value={formData.fecha_inicio}
                     onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
@@ -597,11 +619,12 @@ export default function EventsManagement() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  <label htmlFor="fecha_fin" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
                     Fecha de Fin *
                   </label>
                   <input
                     type="datetime-local"
+                    id="fecha_fin"
                     required
                     value={formData.fecha_fin}
                     onChange={(e) => setFormData({ ...formData, fecha_fin: e.target.value })}
@@ -626,16 +649,17 @@ export default function EventsManagement() {
 
                 {formData.es_de_paga && (
                   <div>
-                    <label className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1">
+                    <label htmlFor="precio" className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1">
                       Precio ($ MXN) *
                     </label>
                     <input
                       type="number"
+                      id="precio"
                       min="1"
                       step="0.01"
                       required
                       value={formData.precio}
-                      onChange={(e) => setFormData({ ...formData, precio: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => setFormData({ ...formData, precio: Number.parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                       placeholder="Ej: 150.00"
                     />
@@ -788,7 +812,7 @@ export default function EventsManagement() {
             </p>
             <div className="bg-white p-4 rounded-xl inline-block shadow-sm mb-4">
               <QRCodeSVG 
-                value={`${window.location.origin}/eventos/${qrEvento.id_evento}/confirmar`}
+                value={`${globalThis.location.origin}/eventos/${qrEvento.id_evento}/confirmar`}
                 size={200}
                 bgColor={"#ffffff"}
                 fgColor={"#000000"}
@@ -799,7 +823,7 @@ export default function EventsManagement() {
             {/* Event Summary Details inside QR Modal */}
             <div className="text-left text-xs bg-[var(--app-hover)] p-3 rounded-lg border border-[var(--app-border)] space-y-1 mb-6 text-[var(--app-text-primary)]">
               <p><strong>Ubicación:</strong> {qrEvento.edificio?.nombre || 'Sin edificio'}</p>
-              <p><strong>Tipo:</strong> {qrEvento.es_de_paga ? `De Paga ($${parseFloat(qrEvento.precio).toFixed(2)} MXN)` : 'Gratuito'}</p>
+              <p><strong>Tipo:</strong> {qrEvento.es_de_paga ? `De Paga ($${Number.parseFloat(qrEvento.precio).toFixed(2)} MXN)` : 'Gratuito'}</p>
               <p><strong>Inicio:</strong> {new Date(qrEvento.fecha_inicio).toLocaleString('es-MX')}</p>
             </div>
 

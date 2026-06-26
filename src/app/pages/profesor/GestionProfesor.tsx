@@ -117,13 +117,13 @@ export default function GestionProfesor() {
     try {
       const newTab = window.open();
       if (newTab) {
-        newTab.document.write(
-          `<iframe src="${horarioPdf}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`
-        );
+        newTab.document.body.innerHTML = `<iframe src="${horarioPdf}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`;
+        newTab.document.body.style.margin = '0';
       } else {
         toast.error('El navegador bloqueó la ventana emergente. Por favor permítelas.');
       }
     } catch (e) {
+      console.error(e);
       toast.error('No se pudo visualizar el PDF');
     }
   };
@@ -136,7 +136,7 @@ export default function GestionProfesor() {
   };
 
   // Form submission
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
 
@@ -149,8 +149,8 @@ export default function GestionProfesor() {
         departamento: departamento.trim(),
         horario_pdf: horarioPdf,
         cubiculo: idEdificio && numero ? {
-          id_edificio: parseInt(idEdificio),
-          piso: parseInt(piso) || 1,
+          id_edificio: Number.parseInt(idEdificio),
+          piso: Number.parseInt(piso) || 1,
           numero: numero.trim(),
           referencia: referencia.trim()
         } : null
@@ -271,31 +271,7 @@ export default function GestionProfesor() {
               Sube tu horario en formato PDF para que los alumnos lo puedan consultar desde el mapa. (Máximo 5MB).
             </p>
 
-            {!horarioPdf ? (
-              <div 
-                className="border-2 border-dashed border-[var(--app-border)] rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-[var(--app-hover)] hover:border-[var(--app-blue)] transition-all duration-300 group"
-                onClick={() => document.getElementById('pdf-upload')?.click()}
-              >
-                <div className="p-4 rounded-full bg-[var(--app-blue-light)] text-[var(--app-blue)] group-hover:scale-110 transition-transform">
-                  <UploadCloud className="w-8 h-8" />
-                </div>
-                <div className="text-center">
-                  <p className="font-semibold text-sm" style={{ color: 'var(--app-text-primary)' }}>
-                    Haz clic para cargar el archivo
-                  </p>
-                  <p className="text-xs mt-1" style={{ color: 'var(--app-text-secondary)' }}>
-                    Formatos soportados: PDF únicamente
-                  </p>
-                </div>
-                <input
-                  id="pdf-upload"
-                  type="file"
-                  accept=".pdf"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </div>
-            ) : (
+            {horarioPdf ? (
               <div className="flex items-center justify-between p-4 rounded-lg bg-green-500/10 border border-green-500/30">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div className="p-2 rounded bg-green-500 text-white shrink-0">
@@ -318,18 +294,43 @@ export default function GestionProfesor() {
                     className="p-2 text-[var(--app-blue)] hover:bg-[var(--app-blue-light)] rounded-lg transition-colors"
                     title="Ver PDF"
                   >
-                    <Eye className="w-5 h-5" />
+                    <FileText className="w-4 h-4" />
                   </button>
                   <button
                     type="button"
                     onClick={handleRemovePdf}
-                    className="p-2 text-red-500 hover:bg-red-500/15 rounded-lg transition-colors"
-                    title="Remover"
+                    className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
+                    title="Eliminar PDF"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
               </div>
+            ) : (
+              <button 
+                type="button"
+                className="w-full border-2 border-dashed border-[var(--app-border)] rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer hover:bg-[var(--app-hover)] hover:border-[var(--app-blue)] transition-all duration-300 group text-center"
+                onClick={() => document.getElementById('pdf-upload')?.click()}
+              >
+                <div className="p-4 rounded-full bg-[var(--app-blue-light)] text-[var(--app-blue)] group-hover:scale-110 transition-transform">
+                  <UploadCloud className="w-8 h-8" />
+                </div>
+                <div className="text-center">
+                  <p className="font-semibold text-sm" style={{ color: 'var(--app-text-primary)' }}>
+                    Haz clic para cargar el archivo
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'var(--app-text-secondary)' }}>
+                    Formatos soportados: PDF únicamente
+                  </p>
+                </div>
+                <input
+                  id="pdf-upload"
+                  type="file"
+                  accept=".pdf"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+              </button>
             )}
           </div>
         </div>

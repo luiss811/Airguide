@@ -91,11 +91,18 @@ export function ProfesorLayout() {
 
       {/* Sidebar Mobile */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-black bg-opacity-50" onClick={() => setMobileMenuOpen(false)}>
+        <div className="md:hidden fixed inset-0 z-40">
+          {/* Backdrop */}
+          <button
+            type="button"
+            className="fixed inset-0 bg-black bg-opacity-50 border-0 outline-hidden w-full h-full cursor-default"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Cerrar menú"
+          />
+          {/* Sidebar content */}
           <aside
-            className="w-64 h-full"
+            className="relative w-64 h-full z-50"
             style={{ background: 'var(--app-sidebar-bg)' }}
-            onClick={(e) => e.stopPropagation()}
           >
             <div className="p-6" style={{ borderBottom: '1px solid var(--app-border)' }}>
               <div className="flex items-center justify-between mb-2">

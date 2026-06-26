@@ -1,3 +1,13 @@
 node_modules
+
 .env
+
 package-lock.json
+
+.scannerwork
+
+/coverage
+
+docker-compose.yml
+
+design-tokens.json

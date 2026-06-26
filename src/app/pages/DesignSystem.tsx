@@ -7,7 +7,6 @@ import {
 } from 'lucide-react';
 
 export default function DesignSystem() {
-  const [showAlert, setShowAlert] = useState(true);
   const [inputValue, setInputValue] = useState('');
 
   return (
@@ -234,7 +233,7 @@ export default function DesignSystem() {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
+                  <label htmlFor="email-ds" className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
                     Correo Electrónico
                   </label>
                   <div className="relative">
@@ -242,6 +241,7 @@ export default function DesignSystem() {
                       style={{ color: 'var(--app-text-secondary)' }} 
                     />
                     <input
+                      id="email-ds"
                       type="email"
                       className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       style={{ 
@@ -255,7 +255,7 @@ export default function DesignSystem() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
+                  <label htmlFor="password-ds" className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
                     Contraseña
                   </label>
                   <div className="relative">
@@ -263,6 +263,7 @@ export default function DesignSystem() {
                       style={{ color: 'var(--app-text-secondary)' }} 
                     />
                     <input
+                      id="password-ds"
                       type="password"
                       className="w-full pl-10 pr-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                       style={{ 
@@ -286,10 +287,11 @@ export default function DesignSystem() {
               </h3>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
+                  <label htmlFor="nombre-ds" className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
                     Nombre
                   </label>
                   <input
+                    id="nombre-ds"
                     type="text"
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
@@ -304,10 +306,11 @@ export default function DesignSystem() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
+                  <label htmlFor="desc-ds" className="block text-sm font-medium mb-2" style={{ color: 'var(--app-text-primary)' }}>
                     Descripción
                   </label>
                   <textarea
+                    id="desc-ds"
                     rows={3}
                     className="w-full px-4 py-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
                     style={{ 
@@ -666,7 +669,7 @@ export default function DesignSystem() {
 }
 
 // Helper Components
-function ColorSwatch({ name, label }: { name: string; label: string }) {
+function ColorSwatch({ name, label }: Readonly<{ name: string; label: string }>) {
   return (
     <div className="flex items-center gap-3">
       <div 
@@ -688,7 +691,7 @@ function ColorSwatch({ name, label }: { name: string; label: string }) {
   );
 }
 
-function IconDisplay({ icon: Icon, label }: { icon: any; label: string }) {
+function IconDisplay({ icon: Icon, label }: Readonly<{ icon: any; label: string }>) {
   return (
     <div className="flex flex-col items-center gap-2">
       <div 
