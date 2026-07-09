@@ -73,12 +73,12 @@ export default function EdificiosManagement() {
           </span>
         </td>
         <td className="px-6 py-4">
-          <div className="flex flex-col text-sm text-[var(--app-text-secondary)] font-mono">
+          <div className="flex flex-col text-sm text-[var(--app-text-secondary)] capitalize">
             <span className="flex items-center gap-1">
-              <MapPin className="w-3.5 h-3.5" /> Lat: {edificio.latitud}
+              {edificio.latitud},
             </span>
-            <span className="ml-4.5">
-              Lng: {edificio.longitud}
+            <span className="flex items-center">
+              {edificio.longitud}
             </span>
           </div>
         </td>

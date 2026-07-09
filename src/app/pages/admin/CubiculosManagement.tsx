@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Edit, Trash2, DoorOpen, Building2, Search, User } from 'lucide-react';
+import { Plus, Edit, Trash2, DoorOpen, Search } from 'lucide-react';
 import { useCubiculos, useEdificios, useProfesores } from '../../hooks';
 import { toast } from 'sonner';
 
@@ -15,9 +15,9 @@ export default function CubiculosManagement() {
     const [deletingCubiculo, setDeletingCubiculo] = useState<any>(null);
     const [formData, setFormData] = useState({
         numero: '',
-        piso: '',
-        id_edificio: '',
-        id_profesor: '',
+        piso: 0,
+        id_edificio: 0,
+        id_profesor: 0,
         referencia: '',
         activo: true
     });
@@ -71,22 +71,20 @@ export default function CubiculosManagement() {
                 </td>
                 <td className="px-6 py-4">
                     <div className="flex items-center gap-2">
-                        <Building2 className="w-4 h-4 text-[var(--app-blue)]" />
-                        <span className="text-sm text-[var(--app-text-primary)]">
-                            {cubiculo.edificio?.nombre || 'Sin edificio'}
-                        </span>
-                    </div>
-                </td>
-                <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                         <span className="text-sm text-[var(--app-text-primary)]">
                             {cubiculo.profesor?.usuario?.nombre || 'Sin asignar'}
                         </span>
                     </div>
                 </td>
                 <td className="px-6 py-4">
-                    <span className="text-sm text-[var(--app-text-secondary)] max-w-[200px] line-clamp-1 block" title={cubiculo.referencia}>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-[var(--app-text-primary)]">
+                            {cubiculo.edificio?.nombre}
+                        </span>
+                    </div>
+                </td>
+                <td className="px-6 py-4">
+                    <span className="text-sm text-[var(--app-text-secondary)] max-w-[200px] line-clamp-1 block">
                         {cubiculo.referencia || 'Sin referencias'}
                     </span>
                 </td>
@@ -126,9 +124,9 @@ export default function CubiculosManagement() {
         try {
             const data = {
                 numero: formData.numero,
-                piso: Number.parseInt(formData.piso),
-                id_edificio: Number.parseInt(formData.id_edificio),
-                id_profesor: Number.parseInt(formData.id_profesor),
+                piso: formData.piso,
+                id_edificio: formData.id_edificio,
+                id_profesor: formData.id_profesor,
                 referencia: formData.referencia,
                 activo: formData.activo
             };
@@ -153,9 +151,9 @@ export default function CubiculosManagement() {
         setEditingCubiculo(cubiculo);
         setFormData({
             numero: cubiculo.numero,
-            piso: cubiculo.piso.toString(),
-            id_edificio: cubiculo.id_edificio.toString(),
-            id_profesor: cubiculo.id_profesor.toString(),
+            piso: cubiculo.piso,
+            id_edificio: cubiculo.id_edificio,
+            id_profesor: cubiculo.id_profesor,
             referencia: cubiculo.referencia || '',
             activo: cubiculo.activo
         });
@@ -184,9 +182,9 @@ export default function CubiculosManagement() {
     const resetForm = () => {
         setFormData({
             numero: '',
-            piso: '',
-            id_edificio: '',
-            id_profesor: '',
+            piso: 0,
+            id_edificio: 0,
+            id_profesor: 0,
             referencia: '',
             activo: true
         });
@@ -248,7 +246,7 @@ export default function CubiculosManagement() {
                                 Edificio
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
-                                Piso
+                                Referencia
                             </th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
                                 Estado
@@ -300,7 +298,7 @@ export default function CubiculosManagement() {
                                         required
                                         min="1"
                                         value={formData.piso}
-                                        onChange={(e) => setFormData({ ...formData, piso: e.target.value })}
+                                        onChange={(e) => setFormData({ ...formData, piso: parseInt(e.target.value) })}
                                         className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                                         placeholder="1"
                                     />
@@ -315,7 +313,7 @@ export default function CubiculosManagement() {
                                     required
                                     id="id_profesor"
                                     value={formData.id_profesor}
-                                    onChange={(e) => setFormData({ ...formData, id_profesor: e.target.value })}
+                                    onChange={(e) => setFormData({ ...formData, id_profesor: parseInt(e.target.value) })}
                                     className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                                 >
                                     <option value="">Selecciona un profesor...</option>
@@ -335,7 +333,7 @@ export default function CubiculosManagement() {
                                     required
                                     id="id_edificio"
                                     value={formData.id_edificio}
-                                    onChange={(e) => setFormData({ ...formData, id_edificio: e.target.value })}
+                                    onChange={(e) => setFormData({ ...formData, id_edificio: parseInt(e.target.value) })}
                                     className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                                 >
                                     <option value="">Selecciona un edificio...</option>

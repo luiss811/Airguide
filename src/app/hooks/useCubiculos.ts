@@ -28,8 +28,8 @@ export function useCubiculos() {
   const [cubiculos, setCubiculos] = useState<Cubiculo[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { user } = useAuth();
-
+  const {user} = useAuth();
+  
   const fetchCubiculos = async () => {
     try {
       setLoading(true);
@@ -73,7 +73,7 @@ export function useCubiculos() {
       }
 
       const newCubiculo = await response.json();
-      setCubiculos([...cubiculos, newCubiculo]);
+      setCubiculos(prev => [...prev, newCubiculo]);
       return newCubiculo;
     } catch (err: any) {
       throw err;

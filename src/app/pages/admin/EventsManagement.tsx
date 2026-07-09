@@ -38,8 +38,8 @@ export default function EventsManagement() {
     descripcion: '',
     fecha_inicio: '',
     fecha_fin: '',
-    id_edificio: '',
-    id_creador: '',
+    id_edificio: 0,
+    id_creador: 0,
     prioridad_evento: 3,
     total_invitados: 0,
     publico: true,
@@ -79,14 +79,14 @@ export default function EventsManagement() {
     try {
       const payload: any = {
         ...formData,
-        id_edificio: Number.parseInt(formData.id_edificio),
+        id_edificio: formData.id_edificio,
         prioridad_evento: Number.parseInt(formData.prioridad_evento.toString()),
         total_invitados: Number.parseInt(formData.total_invitados.toString()) || 0,
         es_de_paga: formData.es_de_paga,
-        precio: formData.es_de_paga ? Number.parseFloat(formData.precio.toString()) : null
+        precio: formData.es_de_paga ? formData.precio : 0
       };
       if (formData.id_creador) {
-        payload.id_creador = Number.parseInt(formData.id_creador);
+        payload.id_creador = formData.id_creador;
       }
 
       if (editingEvento) {
@@ -122,14 +122,14 @@ export default function EventsManagement() {
       descripcion: evento.descripcion || '',
       fecha_inicio: formatDatetimeForInput(evento.fecha_inicio),
       fecha_fin: formatDatetimeForInput(evento.fecha_fin),
-      id_edificio: evento.id_edificio.toString(),
-      id_creador: evento.id_creador ? evento.id_creador.toString() : '',
+      id_edificio: evento.id_edificio,
+      id_creador: evento.id_creador,
       prioridad_evento: evento.prioridad_evento || 3,
       total_invitados: evento.total_invitados || 0,
       publico: evento.publico,
       activo: evento.activo,
       es_de_paga: evento.es_de_paga || false,
-      precio: evento.precio ? Number.parseFloat(evento.precio.toString()) : 0
+      precio: evento.es_de_paga ? Number.parseFloat(evento.precio) : 0
     });
     setShowModal(true);
   };
@@ -159,8 +159,8 @@ export default function EventsManagement() {
       descripcion: '',
       fecha_inicio: '',
       fecha_fin: '',
-      id_edificio: '',
-      id_creador: '',
+      id_edificio: 0,
+      id_creador: 0,
       prioridad_evento: 3,
       total_invitados: 0,
       publico: true,
@@ -281,7 +281,7 @@ export default function EventsManagement() {
             {renderEventStatus(evento)}
             {evento.es_de_paga ? (
               <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 w-fit">
-                ${Number.parseFloat(evento.precio).toFixed(2)} MXN
+                ${evento.precio} MXN
               </span>
             ) : (
               <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 w-fit">
@@ -541,7 +541,7 @@ export default function EventsManagement() {
                   required
                   id="edificio"
                   value={formData.id_edificio}
-                  onChange={(e) => setFormData({ ...formData, id_edificio: e.target.value })}
+                  onChange={(e) => setFormData({ ...formData, id_edificio: parseInt(e.target.value) })}
                   className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                 >
                   <option value="">Selecciona un edificio...</option>
@@ -556,15 +556,14 @@ export default function EventsManagement() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="creador" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
-                    Creador (Opcional)
+                    Creador
                   </label>
                   <select
                     id="creador"
                     value={formData.id_creador}
-                    onChange={(e) => setFormData({ ...formData, id_creador: e.target.value })}
+                    onChange={(e) => setFormData({ ...formData, id_creador: parseInt(e.target.value) })}
                     className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
                   >
-                    <option value="">Mi cuenta actual</option>
                     {usuarios.map((usuario) => (
                       <option key={usuario.id_usuario} value={usuario.id_usuario}>
                         {usuario.nombre} ({usuario.rol})
@@ -574,7 +573,7 @@ export default function EventsManagement() {
                 </div>
                 <div>
                   <label htmlFor="prioridad_evento" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
-                    Prioridad (1-5)
+                    Prioridad
                   </label>
                   <input
                     type="number"
@@ -650,18 +649,16 @@ export default function EventsManagement() {
                 {formData.es_de_paga && (
                   <div>
                     <label htmlFor="precio" className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1">
-                      Precio ($ MXN) *
+                      Precio ($ MXN)
                     </label>
                     <input
                       type="number"
                       id="precio"
                       min="1"
-                      step="0.01"
-                      required
+                      step="1"
                       value={formData.precio}
                       onChange={(e) => setFormData({ ...formData, precio: Number.parseFloat(e.target.value) || 0 })}
                       className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
-                      placeholder="Ej: 150.00"
                     />
                   </div>
                 )}

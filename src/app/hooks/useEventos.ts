@@ -11,9 +11,11 @@ export interface Evento {
   id_edificio: number;
   publico: boolean;
   activo: boolean;
-  id_creador?: number;
+  id_creador: number;
   prioridad_evento?: number;
   total_invitados?: number;
+  es_de_paga?: boolean;
+  precio: number;
   asistentes_confirmados?: number;
   edificio?: {
     id_edificio: number;

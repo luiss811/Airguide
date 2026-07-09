@@ -5,12 +5,12 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-product
 export interface Profesor {
   id_profesor: number;
   id_usuario: number;
-  departamento?: string | null;
+  departamento: string;
   id_cubiculo?: number | null;
   activo: boolean;
   createdAt?: string;
   updatedAt?: string;
-  usuario?: {
+  usuario: {
     nombre: string;
     correo: string;
   };
@@ -27,6 +27,9 @@ export interface Profesor {
       latitud: string;
       longitud: string;
       tipo: string;
+    };
+    usuario: {
+      nombre: string;
     };
   }>;
 }
