@@ -180,7 +180,7 @@ export default function EventConfirmation() {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+        const API_URL = import.meta.env.VITE_API_URL;
         const response = await fetch(`${API_URL}/eventos/${id}`);
         if (!response.ok) throw new Error('No se pudieron obtener los detalles del evento.');
         const data = await response.json();
@@ -231,7 +231,7 @@ export default function EventConfirmation() {
         setProcessingPayment(false);
       }
 
-      const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+      const API_URL = import.meta.env.VITE_API_URL;
       const response = await fetch(`${API_URL}/eventos/${id}/registrar-invitado`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

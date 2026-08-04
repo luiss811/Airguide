@@ -46,7 +46,7 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+      const API_URL = import.meta.env.VITE_API_URL;
       const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,6 +76,7 @@ export default function ResetPassword() {
     <div className="min-h-screen flex items-center justify-center p-4" style={{ background: 'var(--app-bg)' }}>
       <div className="absolute top-4 left-4">
         <button
+          type="button"
           onClick={() => navigate('/login')}
           className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-[var(--app-hover)] transition-colors"
           style={{ color: 'var(--app-text-secondary)' }}

@@ -28,7 +28,7 @@ export default function TicketVerification() {
   useEffect(() => {
     const verifyTicket = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+        const API_URL = import.meta.env.VITE_API_URL;
         const response = await fetch(`${API_URL}/eventos/confirmar-ticket/${id_invitado}`, {
           method: 'POST',
         });

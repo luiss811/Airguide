@@ -6,7 +6,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+const API_URL = import.meta.env.VITE_API_URL;
 
 export interface Evento {
   id_evento: number;
@@ -102,7 +102,7 @@ export default function EventsManagementProfesor() {
     e.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     try {
@@ -450,6 +450,7 @@ export default function EventsManagementProfesor() {
             <div className="flex items-center justify-end gap-1">
               {isOwner && (
                 <button
+                  type="button"
                   onClick={() => { setQrEvento(evento); setShowQrModal(true); }}
                   className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950/20 rounded-lg transition-colors"
                   title="Generar QR de Check-in"
@@ -460,6 +461,7 @@ export default function EventsManagementProfesor() {
               {isOwner ? (
                 <>
                   <button
+                    type="button"
                     onClick={() => handleEdit(evento)}
                     className="p-2 text-[var(--app-blue)] hover:bg-[var(--app-blue-light)] rounded-lg transition-colors"
                     title="Editar Evento"
@@ -467,6 +469,7 @@ export default function EventsManagementProfesor() {
                     <Edit className="w-4.5 h-4.5" />
                   </button>
                   <button
+                    type="button"
                     onClick={() => handleDeleteClick(evento)}
                     className="p-2 text-red-500 hover:bg-red-500/15 rounded-lg transition-colors"
                     title="Eliminar Evento"
@@ -499,6 +502,7 @@ export default function EventsManagementProfesor() {
           </p>
         </div>
         <button
+          type="button"
           onClick={() => setShowModal(true)}
           className="flex items-center gap-2 px-5 py-3 bg-[var(--app-blue)] text-white font-bold rounded-lg hover:opacity-90 transition-opacity shadow-md cursor-pointer"
         >
@@ -773,6 +777,7 @@ export default function EventsManagementProfesor() {
             </p>
             <div className="flex gap-3">
               <button
+                type="button"
                 onClick={() => {
                   setShowDeleteModal(false);
                   setDeletingEvento(null);
@@ -782,6 +787,7 @@ export default function EventsManagementProfesor() {
                 Cancelar
               </button>
               <button
+                type="button"
                 onClick={handleDeleteConfirm}
                 className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-semibold shadow-md cursor-pointer"
               >
@@ -821,6 +827,7 @@ export default function EventsManagementProfesor() {
 
             <div className="flex flex-col gap-2">
               <button
+                type="button"
                 onClick={() => downloadEventPdf(qrEvento)}
                 className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--app-blue)] hover:bg-opacity-90 text-white rounded-lg transition-all w-full font-semibold cursor-pointer"
               >
@@ -828,6 +835,7 @@ export default function EventsManagementProfesor() {
                 Descargar Flyer PDF
               </button>
               <button
+                type="button"
                 onClick={() => { setShowQrModal(false); setQrEvento(null); }}
                 className="px-4 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] text-[var(--app-text-primary)] rounded-lg hover:bg-opacity-80 transition-all w-full font-semibold cursor-pointer"
               >

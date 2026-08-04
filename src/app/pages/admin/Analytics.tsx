@@ -58,7 +58,7 @@ export default function Analytics() {
     setIsTraining(true);
     toast.info("Entrenando Neurona...");
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+      const API_URL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/analytics/train-congestion`, {
         method: 'POST',
@@ -74,8 +74,9 @@ export default function Analytics() {
         const errorData = await res.json();
         toast.error(`Error en el entrenamiento: ${errorData.error}`);
       }
-    } catch (e) {
-      toast.error('Error en la conexión.');
+    } catch (error) {
+      console.error('Error training model:', error);
+      toast.error('Error en el entrenamiento');
     } finally {
       setIsTraining(false);
     }
@@ -431,6 +432,7 @@ export default function Analytics() {
           La central enruta los usos históricos y activa modelos TensorFlow para predecir aglomeraciones en los caminos dinámicos. Dispare un re-entrenamiento si percibe lentitud en el flujo de los alumnos u horarios irregulares.
         </p>
         <button
+          type="button"
           onClick={handleTrainAI}
           disabled={isTraining}
           className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold text-white transition-all ${isTraining ? 'bg-gray-500 cursor-not-allowed' : 'bg-[var(--app-blue)] hover:bg-[var(--app-blue-hover)] shadow-lg'

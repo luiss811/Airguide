@@ -191,7 +191,7 @@ export default function MapPage() {
 
     const { isLoaded, loadError } = useJsApiLoader({
         id: 'google-map-script',
-        googleMapsApiKey: "AIzaSyBCORaDyk1go3cDfKQNSM9-CS8wv12GSJM"
+        googleMapsApiKey: import.meta.env.VITE_API_GOOGLE_MAPS,
     });
 
     const [map, setMap] = useState<google.maps.Map | null>(null);
@@ -235,7 +235,7 @@ export default function MapPage() {
     useEffect(() => {
         const fetchCaminos = async () => {
             try {
-                const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+                const API_URL = import.meta.env.VITE_API_URL;
                 const res = await fetch(`${API_URL}/mapa/data`);
                 if (res.ok) {
                     const data = await res.json();
@@ -285,7 +285,7 @@ export default function MapPage() {
             setHeatmapRoutes([]);
         } else {
             try {
-                const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+                const API_URL = import.meta.env.VITE_API_URL;
                 toast.info("Analizando datos de todas las rutas...", { duration: 3000 });
                 const res = await fetch(`${API_URL}/rutas/heatmap`);
                 if (res.ok) {
@@ -345,7 +345,7 @@ export default function MapPage() {
     };
 
     const fetchCustomPath = async (originId: number, destinationId: number): Promise<google.maps.LatLngLiteral[] | null> => {
-        const API_URL = import.meta.env.VITE_API_URL || 'https://airguidebackend-production.up.railway.app/api';
+        const API_URL = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem('token');
         try {
             const res = await fetch(`${API_URL}/rutas/find`, {
@@ -647,17 +647,17 @@ export default function MapPage() {
                     {user?.rol === "alumno" && (
                         <div className="flex items-center gap-4 px-3 py-2 bg-[var(--app-hover)] rounded-lg">
                             <span className="text-sm text-[var(--app-text-primary)]">{user.nombre}</span>
-                            <button onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
+                            <button type="button" onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
                         </div>
                     )}
                     {user?.rol === "admin" ? (
                         <div className="flex items-center gap-4 px-3 py-2 bg-[var(--app-hover)] rounded-lg">
                             <span className="text-sm text-[var(--app-text-primary)]">{user.nombre}</span>
-                            <button onClick={() => { navigate('/admin'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Dashboard</button>
-                            <button onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
+                            <button type="button" onClick={() => { navigate('/admin'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Dashboard</button>
+                            <button type="button" onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
                         </div>
                     ) : (
-                        <button onClick={() => navigate('/login')} className="bg-app-blue text-white px-4 py-2 rounded-lg text-sm">Iniciar Sesión</button>
+                            <button type="button" onClick={() => navigate('/login')} className="bg-app-blue text-white px-4 py-2 rounded-lg text-sm">Iniciar Sesión</button>
                     )}
                     <ThemeToggle />
                 </div>
@@ -695,6 +695,7 @@ export default function MapPage() {
                     {/* Selector de Pestañas (Tabs) */}
                     <div className="flex bg-[var(--app-hover)] p-1 rounded-xl">
                         <button
+                            type="button"
                             onClick={() => setActiveTab('curso')}
                             className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${activeTab === 'curso'
                                 ? 'bg-[var(--app-card-bg)] text-[var(--app-text-primary)] shadow-sm'
@@ -708,6 +709,7 @@ export default function MapPage() {
                             En Curso ({eventosEnCurso.length})
                         </button>
                         <button
+                            type="button"
                             onClick={() => setActiveTab('proximos')}
                             className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-2 ${activeTab === 'proximos'
                                 ? 'bg-[var(--app-card-bg)] text-[var(--app-text-primary)] shadow-sm'

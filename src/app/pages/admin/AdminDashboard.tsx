@@ -56,7 +56,7 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[var(--app-background)]">
       {/* Header */}
       <header className="bg-[var(--app-header-bg)] border-b border-[var(--app-border)] px-6 py-4">
-        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6 flex items-center justify-between">
+        <div className="grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <LayoutDashboard className="w-6 h-6 text-[var(--app-blue)]" />
             <h1 className="text-2xl font-bold text-[var(--app-text-primary)]">
@@ -67,11 +67,12 @@ export default function AdminDashboard() {
             <div className="flex items-center gap-2 px-4 py-2 bg-[var(--app-hover)] rounded-lg">
               <Users className="w-4 h-4 text-[var(--app-text-secondary)]" />
               <span className="text-sm text-[var(--app-text-primary)]">{user?.nombre}</span>
-              <span className="text-xs text-[var(--app-text-secondary)] bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 px-2 py-0.5 rounded-full">
+              <span className="text-xs text-[var(--app-text-secondary)] bg-red-100 dark:bg-red-900 dark:text-red-300 px-2 py-0.5 rounded-full">
                 Admin
               </span>
             </div>
             <button
+              type="button"
               onClick={toggleTheme}
               className="px-4 py-2 bg-[var(--app-blue)] text-white rounded-lg hover:opacity-90 transition-opacity">
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -107,6 +108,7 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {quickActions.map((action) => (
               <button
+                type="button"
                 key={action.title}
                 onClick={() => navigate(action.path)}
                 className="bg-[var(--app-card-bg)] border border-[var(--app-border)] rounded-lg p-6 hover:shadow-lg hover:scale-105 transition-all text-left group"
