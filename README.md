@@ -1,71 +1,87 @@
+# Airguide
 
-  # AirGuide
-  # Aclaraciones:
-  Debes clonar este repo y el repo del backend
-  Frontend: https://github.com/luiss811/Airguide.git
-  Backend: https://github.com/luiss811/Backend-Airguide.git
-  
-  ## Pasos para correr el proyecto
+Plataforma de Navegación Universitaria y Gestión de Eventos Académicos desarrollada con React 18, Vite 6, TypeScript, Material-UI y Tailwind CSS.
 
-  #1. Abre la terminal en Visual Studio Code
-  En la rama principal ``` \Airguide> ``` 
-  
-  Ejecuta el comando 
-  ```bash
-  npm install --legacy-peer-deps 
-  ```
-  . Tardara unos minutos. Cuando finalice, abre una nueva terminal en Visual Studio Code y navega hacia el backend. ``` cd Backend-Airguide ```
+---
 
-  #2. Servidor Backend
-  En la rama del servidor ``` \Backend-Airguide> ```
+## Arquitectura y Tecnologías
 
-  Ejecuta el comando 
-  ```bash 
-  npm install --legacy-peer-deps
-  ```
-  . Cuando finalice; deberas crear un archivo llamado .env, lo creas y pegas este codigo:
-  
-  ---
-  ```bash
-  DATABASE_URL="postgres://95f5f1214a82708148a9b43e39fa1e41e4060e963ee217d0c4174044af1541f9:sk_XYgJ7P5CcF3TPpb0XVgW0@pooled.db.prisma.io:5432/postgres?sslmode=require"
+- **Core & Bundler:** React 18 + Vite 6
+- **Lenguaje:** TypeScript
+- **Estilos & Componentes UI:** Material-UI (MUI v7), Tailwind CSS 4, Radix UI, Emotion
+- **Enrutamiento:** React Router v7
+- **Gráficos & Mapa:** Google Maps API, Recharts
+- **Iconografía & Animaciones:** Lucide React, Motion (Framer Motion)
 
-  #URL DEVELOPMENT  https://airguidebackend-production.up.railway.app/api || https://airguide-lac.vercel.app
-  API_URL="https://airguidebackend-production.up.railway.app/api"
-  API_KEY="AIzaSyBCORaDyk1go3cDfKQNSM9-CS8wv12GSJM"
-  # Server
-  NODE_ENV="development"
-  # JWT
-  JWT_SECRET="67c87664b5bba0c8746a21b017b4ea71"
-  JWT_EXPIRES_IN="1d"
+---
 
-  # CORS http://localhost:5173
-  CORS_ORIGIN="http://localhost:5173"
+# Aclaraciones:
 
-  # Email / SMTP (for 2FA OTP)
-  # Gmail example: use an App Password (not your account password)
-  # Generate one at: https://myaccount.google.com/apppasswords
-  SMTP_HOST="smtp.gmail.com"
-  SMTP_PORT="587"
-  SMTP_SECURE="false"
-  SMTP_USER="lalitorios81@gmail.com"
-  SMTP_PASS="yxyx dcqh nqag nant"
-  SMTP_FROM="AirGuide <lalitorios81@gmail.com>"
-  ```
+Es una aplicación web interactiva diseñada para la Universidad Tecnologica de Queretaro, pero tambien puede ser usada como otro servicio para terceros. Permite consultar mapas interactivos dentro de la universidad, calcular rutas entre edificios y salones, consultar la ubicación de cubículos de docentes y visualizar eventos universitarios próximos.
 
-  #3. En la carpeta Airguide, crea otro archivo .env y pega este codigo:
-  ---
-  ```bash
-  VITE_API_URL=https://airguidebackend-production.up.railway.app/api
-  ```
-  #4. Ahora sí, en la terminal del servidor backend (Terminal 2), ejecuta el comando 
-  ```bash 
-  npm run dev
-  ```
-  . Eso debe de inciar el servidor.
+---
 
-  #5. En la terminal del frontend (Terminal 1), ejecuta el comando 
-  ```bash 
-  npm run dev
-  ```
-  . Eso debe de inciar el frontend.
-  
+## Pasos para correr el proyecto
+
+### 1. Clonar los Repositorios
+
+Debes clonar tanto el repositorio del Frontend como el del Backend:
+
+```bash
+# Frontend
+git clone https://github.com/luiss811/Airguide.git
+
+# Backend
+git clone https://github.com/luiss811/Backend-Airguide.git
+```
+
+### 2. Abre la terminal en Visual Studio Code
+En la rama principal ``` \Airguide> ``` 
+
+Ejecuta el comando 
+```bash
+npm install --legacy-peer-deps 
+```
+. Tardara unos minutos. Cuando finalice, abre una nueva terminal en Visual Studio Code y navega hacia el backend. ``` cd Backend-Airguide ```
+
+Servidor Backend
+En la rama del servidor ``` \Backend-Airguide> ```
+
+Ejecuta el comando 
+```bash 
+npm install --legacy-peer-deps
+```
+
+### 3. Instalación de Dependencias del Frontend
+
+Navega a la carpeta `Airguide`:
+
+```bash
+cd Airguide
+npm install --legacy-peer-deps
+```
+
+### 4. Configuración de Variables de Entorno (.env)
+
+### 5. Ahora sí, en la terminal del servidor backend (Terminal 2), ejecuta el comando 
+```bash 
+npm run dev
+```
+. Eso debe de inciar el servidor.
+
+### 6. En la terminal del frontend (Terminal 1), ejecuta el comando 
+```bash 
+npm run dev
+```
+. Eso debe de inciar el frontend.
+
+## Seguridad y DevSecOps
+
+El proyecto cuenta con controles de seguridad integrados:
+- **Sanitización de Entradas:** Validación de formularios y prevención de XSS.
+- **Manejo Seguro de Sesión:** Almacenamiento seguro de tokens JWT expirables.
+- **Configuración Centralizada de API:** Ninguna URL de backend se encuentra hardcodeada en el código fuente (`src/app/config/api.ts`).
+
+---
+
+Desarrollado por el equipo **Airguide** | Todos los derechos reservados.
