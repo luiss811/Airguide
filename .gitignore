@@ -1,13 +1,14 @@
 node_modules
-
-.env
-
-package-lock.json
-
-.scannerwork
-
 /coverage
 
-docker-compose.yml
 
+package-lock.json
+docker-compose.yml
 design-tokens.json
+gen.conf
+sca-report.json
+zap_report.html
+
+
+.scannerwork
+.env
