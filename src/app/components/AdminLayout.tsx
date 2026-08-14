@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Building2, Calendar, BarChart3, Map, LogOut, Menu, X, DoorOpen, Box } from 'lucide-react';
+import { LayoutDashboard, Building2, Calendar, BarChart3, Map, LogOut, Menu, X, DoorOpen, Box, ShoppingBag } from 'lucide-react';
 import { ThemeToggle } from './ThemeToggle';
 import { useState } from 'react';
 
@@ -17,11 +17,13 @@ export function AdminLayout() {
 
   const navItems = [
     { path: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+    { path: '/admin/productos', icon: ShoppingBag, label: 'Mercancía' },
     { path: '/admin/edificios', icon: Building2, label: 'Edificios' },
     { path: '/admin/salones', icon: DoorOpen, label: 'Salones' },
     { path: '/admin/cubiculos', icon: Box, label: 'Cubículos' },
     { path: '/admin/events', icon: Calendar, label: 'Eventos' },
     { path: '/admin/analytics', icon: BarChart3, label: 'Analíticas' },
+    { path: '/mercancia', icon: ShoppingBag, label: 'Ver Tienda' },
     { path: '/map', icon: Map, label: 'Ver Mapa' }
   ];
 

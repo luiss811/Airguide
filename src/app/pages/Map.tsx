@@ -643,24 +643,31 @@ export default function MapPage() {
                     <img src={logoUTEQ} alt="Logo UTEQ" className="h-8" />
                     <h1 className="text-xl font-semibold text-[var(--app-text-primary)]">AirGuide</h1>
                 </div>
-                <div className="flex items-center gap-3">
-                    {user?.rol === "alumno" && (
-                        <div className="flex items-center gap-4 px-3 py-2 bg-[var(--app-hover)] rounded-lg">
-                            <span className="text-sm text-[var(--app-text-primary)]">{user.nombre}</span>
-                            <button type="button" onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
-                        </div>
-                    )}
-                    {user?.rol === "admin" ? (
-                        <div className="flex items-center gap-4 px-3 py-2 bg-[var(--app-hover)] rounded-lg">
-                            <span className="text-sm text-[var(--app-text-primary)]">{user.nombre}</span>
-                            <button type="button" onClick={() => { navigate('/admin'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Dashboard</button>
-                            <button type="button" onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
-                        </div>
-                    ) : (
+                    <div className="flex items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => navigate('/mercancia')}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5"
+                        >
+                            Tienda UTEQ
+                        </button>
+                        {user?.rol === "alumno" && (
+                            <div className="flex items-center gap-4 px-3 py-2 bg-[var(--app-hover)] rounded-lg">
+                                <span className="text-sm text-[var(--app-text-primary)]">{user.nombre}</span>
+                                <button type="button" onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
+                            </div>
+                        )}
+                        {user?.rol === "admin" ? (
+                            <div className="flex items-center gap-4 px-3 py-2 bg-[var(--app-hover)] rounded-lg">
+                                <span className="text-sm text-[var(--app-text-primary)]">{user.nombre}</span>
+                                <button type="button" onClick={() => { navigate('/admin'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Dashboard</button>
+                                <button type="button" onClick={() => { logout(); navigate('/login'); }} className="bg-app-blue text-white px-3 py-1 rounded-lg text-sm">Cerrar Sesión</button>
+                            </div>
+                        ) : (
                             <button type="button" onClick={() => navigate('/login')} className="bg-app-blue text-white px-4 py-2 rounded-lg text-sm">Iniciar Sesión</button>
-                    )}
-                    <ThemeToggle />
-                </div>
+                        )}
+                        <ThemeToggle />
+                    </div>
             </header>
 
             <SearchBar

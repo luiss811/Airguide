@@ -24,3 +24,6 @@ export type { Profesor } from './useProfesores';
 
 export { useCubiculos } from './useCubiculos';
 export type { Cubiculo } from './useCubiculos';
+
+export { useProductos } from './useProductos';
+export type { Producto, CartItem } from './useProductos';

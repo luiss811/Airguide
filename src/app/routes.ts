@@ -17,6 +17,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import CubiculosManagement from './pages/admin/CubiculosManagement';
 import EventConfirmation from './pages/EventConfirmation';
+import Mercancia from './pages/Mercancia';
+import ProductosManagement from './pages/admin/ProductosManagement';
 import GestionProfesor from './pages/profesor/GestionProfesor';
 import PerfilProfesor from './pages/profesor/PerfilProfesor';
 import EventsManagementProfesor from './pages/profesor/EventsManagementProfesor';
@@ -25,6 +27,10 @@ export const router = createBrowserRouter([
   {
     path: '/',
     Component: Map, 
+  },
+  {
+    path: '/mercancia',
+    Component: Mercancia,
   },
   {
     path: '/login',
@@ -64,9 +70,14 @@ export const router = createBrowserRouter([
         Component: AdminDashboard,
       },
       {
+        path: 'productos',
+        Component: ProductosManagement,
+      },
+      {
         path: 'edificios',
         Component: EdificiosManagement,
       },
+
       {
         path: 'events',
         Component: EventsManagement,

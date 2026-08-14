@@ -1,0 +1,6 @@
+projectKey=Airguide
+serverUrl=http://localhost:9000
+serverVersion=26.6.0.123539
+dashboardUrl=http://localhost:9000/dashboard?id=Airguide
+ceTaskId=ac19f9f4-ccb1-4a79-b424-b4763ec7f1c7
+ceTaskUrl=http://localhost:9000/api/ce/task?id=ac19f9f4-ccb1-4a79-b424-b4763ec7f1c7

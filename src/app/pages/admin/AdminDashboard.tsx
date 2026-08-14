@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router';
-import { LayoutDashboard, Building2, Calendar, BarChart3, Users, Moon, Sun, Settings } from 'lucide-react';
+import { LayoutDashboard, Building2, Calendar, BarChart3, Users, Moon, Sun, Settings, ShoppingBag } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useAnalytics } from '../../hooks';
@@ -18,6 +18,14 @@ export default function AdminDashboard() {
   }
 
   const quickActions = [
+    {
+      title: 'Mercancía UTEQ',
+      description: 'Gestionar playeras, termos, llaveros y sudaderas',
+      icon: ShoppingBag,
+      color: 'bg-emerald-500',
+      path: '/admin/productos',
+      count: 'Catálogo'
+    },
     {
       title: 'Edificios',
       description: 'Gestionar edificios y ubicaciones',
