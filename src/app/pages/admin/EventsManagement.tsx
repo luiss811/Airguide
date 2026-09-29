@@ -1,0 +1,847 @@
+import React, { useState } from 'react';
+import { Plus, Edit, Trash2, Calendar, Building2, Search, Brain, QrCode, Download } from 'lucide-react';
+import { useEventos, useEdificios, useUsuarios } from '../../hooks';
+import { useAuth } from '../../context/AuthContext';
+import { QRCodeSVG } from 'qrcode.react';
+import { toast } from 'sonner';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { jsPDF } from 'jspdf';
+
+export default function EventsManagement() {
+  const { eventos, loading, createEvento, updateEvento, deleteEvento, fetchEventos, trainNeuralNetwork } = useEventos();
+  const { edificios } = useEdificios();
+  const { usuarios, fetchUsuarios } = useUsuarios();
+  const { user } = useAuth();
+  const isStudent = user?.rol === 'alumno';
+  const [searchTerm, setSearchTerm] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showChartModal, setShowChartModal] = useState(false);
+  const [showQrModal, setShowQrModal] = useState(false);
+  const [qrEvento, setQrEvento] = useState<any>(null);
+  const [training, setTraining] = useState(false);
+  const [learningCurve, setLearningCurve] = useState<any[]>([]);
+  const [editingEvento, setEditingEvento] = useState<any>(null);
+  const [deletingEvento, setDeletingEvento] = useState<any>(null);
+
+  const formatDatetimeForInput = (isoString: string) => {
+    if (!isoString) return '';
+    try {
+        const d = new Date(isoString);
+        d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+        return d.toISOString().slice(0, 16);
+    } catch { return ''; }
+  };
+
+  const [formData, setFormData] = useState({
+    nombre: '',
+    descripcion: '',
+    fecha_inicio: '',
+    fecha_fin: '',
+    id_edificio: 0,
+    id_creador: 0,
+    prioridad_evento: 3,
+    total_invitados: 0,
+    publico: true,
+    activo: true,
+    es_de_paga: false,
+    precio: 0
+  });
+
+  const eventosFiltrados = eventos.filter(e =>
+    e.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    e.descripcion?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleTrainNetwork = async () => {
+    setTraining(true);
+    try {
+      const result = await trainNeuralNetwork();
+      if (result.success && result.history) {
+        const chartData = result.history.epochs.map((ep: number, i: number) => ({
+          epoch: ep,
+          loss: result.history.loss[i]
+        }));
+        setLearningCurve(chartData);
+        setShowChartModal(true);
+        toast.success('Red neuronal entrenada con éxito');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error al entrenar red neuronal');
+    } finally {
+      setTraining(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault();
+
+    try {
+      const payload: any = {
+        ...formData,
+        id_edificio: formData.id_edificio,
+        prioridad_evento: Number.parseInt(formData.prioridad_evento.toString()),
+        total_invitados: Number.parseInt(formData.total_invitados.toString()) || 0,
+        es_de_paga: formData.es_de_paga,
+        precio: formData.es_de_paga ? formData.precio : 0
+      };
+      if (formData.id_creador) {
+        payload.id_creador = formData.id_creador;
+      }
+
+      if (editingEvento) {
+        const result = await updateEvento(editingEvento.id_evento, payload);
+        if (result.warning) {
+          toast.info(result.warning, { duration: 6000 });
+        } else {
+          toast.success('Evento actualizado correctamente');
+        }
+      } else {
+        const result = await createEvento(payload);
+
+        if (result.warning) {
+          toast.info(result.warning, { duration: 6000 });
+        } else {
+          toast.success('Evento creado correctamente');
+        }
+      }
+
+      setShowModal(false);
+      resetForm();
+      fetchEventos();
+      fetchUsuarios();
+    } catch (error: any) {
+      toast.error(error.message || 'Error al guardar evento');
+    }
+  };
+
+  const handleEdit = (evento: any) => {
+    setEditingEvento(evento);
+    setFormData({
+      nombre: evento.nombre,
+      descripcion: evento.descripcion || '',
+      fecha_inicio: formatDatetimeForInput(evento.fecha_inicio),
+      fecha_fin: formatDatetimeForInput(evento.fecha_fin),
+      id_edificio: evento.id_edificio,
+      id_creador: evento.id_creador,
+      prioridad_evento: evento.prioridad_evento || 3,
+      total_invitados: evento.total_invitados || 0,
+      publico: evento.publico,
+      activo: evento.activo,
+      es_de_paga: evento.es_de_paga || false,
+      precio: evento.es_de_paga ? Number.parseFloat(evento.precio) : 0
+    });
+    setShowModal(true);
+  };
+
+  const handleDeleteClick = (evento: any) => {
+    setDeletingEvento(evento);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingEvento) return;
+
+    try {
+      await deleteEvento(deletingEvento.id_evento);
+      toast.success('Evento eliminado correctamente');
+      setShowDeleteModal(false);
+      setDeletingEvento(null);
+      fetchEventos();
+    } catch (error: any) {
+      toast.error(error.message || 'Error al eliminar evento');
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      nombre: '',
+      descripcion: '',
+      fecha_inicio: '',
+      fecha_fin: '',
+      id_edificio: 0,
+      id_creador: 0,
+      prioridad_evento: 3,
+      total_invitados: 0,
+      publico: true,
+      activo: true,
+      es_de_paga: false,
+      precio: 0
+    });
+    setEditingEvento(null);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    resetForm();
+  };
+
+  const isEventoActivo = (evento: any) => {
+    const now = new Date();
+    const inicio = new Date(evento.fecha_inicio);
+    const fin = new Date(evento.fecha_fin);
+    return now >= inicio && now <= fin && evento.activo;
+  };
+
+  const isEventoProximo = (evento: any) => {
+    const now = new Date();
+    const inicio = new Date(evento.fecha_inicio);
+    return inicio > now && evento.activo;
+  };
+
+  const renderEventStatus = (evento: any) => {
+    if (isEventoActivo(evento)) {
+      return (
+        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 w-fit">
+          En curso
+        </span>
+      );
+    }
+    if (isEventoProximo(evento)) {
+      return (
+        <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 w-fit">
+          Próximo
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 w-fit">
+        Finalizado
+      </span>
+    );
+  };
+
+  const renderTableBody = () => {
+    if (loading) {
+      return (
+        <tr>
+          <td colSpan={5} className="px-6 py-8 text-center">
+            <div className="flex items-center justify-center gap-3">
+              <div className="w-5 h-5 border-2 border-[var(--app-blue)] border-t-transparent rounded-full animate-spin" />
+              <span className="text-sm text-[var(--app-text-secondary)]">Cargando...</span>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+
+    if (eventosFiltrados.length === 0) {
+      return (
+        <tr>
+          <td colSpan={5} className="px-6 py-8 text-center text-sm text-[var(--app-text-secondary)]">
+            No se encontraron eventos
+          </td>
+        </tr>
+      );
+    }
+
+    return eventosFiltrados.map((evento) => (
+      <tr key={evento.id_evento} className="hover:bg-[var(--app-hover)]">
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex-shrink-0">
+              <Calendar className="w-8 h-8 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <div className="text-sm font-medium text-[var(--app-text-primary)]">
+                {evento.nombre}
+              </div>
+              {evento.descripcion && (
+                <div className="text-xs text-[var(--app-text-secondary)] line-clamp-1">
+                  {evento.descripcion}
+                </div>
+              )}
+            </div>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-4 h-4 text-[var(--app-blue)]" />
+            <span className="text-sm text-[var(--app-text-primary)]">
+              {evento.edificio?.nombre || 'Sin edificio'}
+            </span>
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="text-sm text-[var(--app-text-primary)]">
+            {new Date(evento.fecha_inicio).toLocaleString('es-MX', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            })}
+          </div>
+          <div className="text-xs text-[var(--app-text-secondary)]">
+            hasta {new Date(evento.fecha_fin).toLocaleString('es-MX', {
+              day: '2-digit', month: 'short', year: 'numeric',
+              hour: '2-digit', minute: '2-digit'
+            })}
+          </div>
+        </td>
+        <td className="px-6 py-4">
+          <div className="flex flex-col gap-1">
+            {renderEventStatus(evento)}
+            {evento.es_de_paga ? (
+              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-300 w-fit">
+                ${evento.precio} MXN
+              </span>
+            ) : (
+              <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 w-fit">
+                Gratuito
+              </span>
+            )}
+          </div>
+          {evento.total_invitados && evento.total_invitados > 0 ? (
+            <div className="text-xs text-[var(--app-text-secondary)] mt-1">
+              {evento.asistentes_confirmados || 0} / {evento.total_invitados} confirmados
+            </div>
+          ) : null}
+        </td>
+        {!isStudent && (
+          <td className="px-6 py-4 text-right text-sm font-medium">
+            <div className="flex items-center justify-end gap-2">
+              <button
+                onClick={() => { setQrEvento(evento); setShowQrModal(true); }}
+                className="p-2 text-purple-600 hover:bg-purple-50 dark:hover:bg-purple-950 rounded-lg transition-colors"
+                title="Generar QR"
+              >
+                <QrCode className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleEdit(evento)}
+                className="p-2 text-[var(--app-blue)] hover:bg-[var(--app-hover)] rounded-lg transition-colors"
+                title="Editar"
+              >
+                <Edit className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => handleDeleteClick(evento)}
+                className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-950 rounded-lg transition-colors"
+                title="Eliminar"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          </td>
+        )}
+      </tr>
+    ));
+  };
+
+  const downloadEventPdf = (evento: any) => {
+    try {
+      const doc = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4'
+      });
+
+      const primaryColor = [59, 130, 246]; // #3b82f6 (blue)
+      const textColor = [17, 24, 39]; // #111827
+      const secondaryTextColor = [107, 114, 128]; // #6b7280
+
+      doc.setFillColor(primaryColor[0], primaryColor[1], primaryColor[2]);
+      doc.rect(0, 0, 210, 40, 'F');
+
+      doc.setTextColor(255, 255, 255);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(22);
+      doc.text('AIRGUIDE - EVENTO', 15, 25);
+
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      doc.setFontSize(20);
+      doc.text(evento.nombre, 15, 55);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(secondaryTextColor[0], secondaryTextColor[1], secondaryTextColor[2]);
+      doc.text('Detalles y registro de asistencia del evento', 15, 62);
+
+      doc.setDrawColor(229, 231, 235);
+      doc.line(15, 67, 195, 67);
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(12);
+      doc.setTextColor(textColor[0], textColor[1], textColor[2]);
+      
+      doc.text('Ubicacion:', 15, 77);
+      doc.setFont('helvetica', 'normal');
+      doc.text(evento.edificio?.nombre || 'Sin edificio', 45, 77);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Fecha Inicio:', 15, 85);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date(evento.fecha_inicio).toLocaleString('es-MX'), 45, 85);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Fecha Fin:', 15, 93);
+      doc.setFont('helvetica', 'normal');
+      doc.text(new Date(evento.fecha_fin).toLocaleString('es-MX'), 45, 93);
+
+      doc.setFont('helvetica', 'bold');
+      doc.text('Costo:', 15, 101);
+      doc.setFont('helvetica', 'normal');
+      doc.text(evento.es_de_paga ? `$${Number.parseFloat(evento.precio).toFixed(2)} MXN` : 'Gratuito', 45, 101);
+
+      if (evento.descripcion) {
+        doc.setFont('helvetica', 'bold');
+        doc.text('Descripcion:', 15, 110);
+        doc.setFont('helvetica', 'normal');
+        const splitDesc = doc.splitTextToSize(evento.descripcion, 180);
+        doc.text(splitDesc, 15, 116);
+      }
+
+      const qrValue = `${globalThis.location.origin}/eventos/${evento.id_evento}/confirmar`;
+      const img = new Image();
+      img.crossOrigin = 'Anonymous';
+      img.onload = () => {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(14);
+        doc.text('ESCANEA EL CODIGO QR PARA REGISTRARTE', 105, 140, { align: 'center' });
+        doc.addImage(img, 'PNG', 65, 148, 80, 80);
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        doc.setTextColor(secondaryTextColor[0], secondaryTextColor[1], secondaryTextColor[2]);
+        doc.text('AirGuide - Sistema de Localizacion de Interiores', 105, 240, { align: 'center' });
+        doc.text(`Enlace: ${qrValue}`, 105, 245, { align: 'center' });
+
+        doc.save(`Detalles_Evento_${evento.id_evento}.pdf`);
+        toast.success('Boleto/Flyer PDF descargado con éxito');
+      };
+      img.src = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrValue)}`;
+    } catch (err) {
+      console.error(err);
+      toast.error('Error al generar el PDF del evento.');
+    }
+  };
+
+  return (
+    <div className='min-h-screen bg-[var(--app-background)] p-6'>
+      {/* Header */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-center justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-[var(--app-text-primary)]">
+            Gestión de Eventos
+          </h2>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-[var(--app-text-secondary)]">
+              Administra los eventos de la universidad
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleTrainNetwork}
+            disabled={training}
+            className={`flex items-center gap-2 px-4 py-2 border border-[var(--app-border)] bg-[var(--app-hover)] text-[var(--app-text-primary)] rounded-lg hover:bg-[var(--app-border)] transition-colors ${training ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            <Brain className={`w-4 h-4 text-purple-500 ${training ? 'animate-pulse' : ''}`} />
+            {training ? 'Entrenando...' : 'Entrenar Neurona gestora de eventos'}
+          </button>
+          {!isStudent && (
+            <button
+              onClick={() => setShowModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-[var(--app-blue)] text-white rounded-lg hover:opacity-90 transition-opacity"
+            >
+              <Plus className="w-4 h-4" />
+              Nuevo Evento
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Search */}
+      <div className="mb-6">
+        <div className="relative max-w-md">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[var(--app-text-secondary)]" />
+          <input
+            type="text"
+            placeholder="Buscar eventos..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] placeholder:text-[var(--app-text-secondary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+          />
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-[var(--app-card-bg)] border border-[var(--app-border)] rounded-lg overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-[var(--app-hover)] border-b border-[var(--app-border)]">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
+                Evento
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
+                Ubicación
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
+                Fechas
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
+                Estado
+              </th>
+              {!isStudent && (
+                <th className="px-6 py-3 text-right text-xs font-medium text-[var(--app-text-secondary)] uppercase tracking-wider">
+                  Acciones
+                </th>
+              )}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--app-border)]">
+            {renderTableBody()}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Modal Crear/Editar */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b border-[var(--app-border)]">
+              <h3 className="text-xl font-bold text-[var(--app-text-primary)]">
+                {editingEvento ? 'Editar Evento' : 'Nuevo Evento'}
+              </h3>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              <div>
+                <label htmlFor="nombre" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  Nombre del Evento *
+                </label>
+                <input
+                  type="text"
+                  id="nombre"
+                  required
+                  value={formData.nombre}
+                  onChange={(e) => setFormData({ ...formData, nombre: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  placeholder="Ej: Conferencia de Tecnología"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="descripcion" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  Descripción
+                </label>
+                <textarea
+                  id="descripcion"
+                  value={formData.descripcion}
+                  onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
+                  className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  rows={3}
+                  placeholder="Descripción del evento"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="edificio" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  Edificio *
+                </label>
+                <select
+                  required
+                  id="edificio"
+                  value={formData.id_edificio}
+                  onChange={(e) => setFormData({ ...formData, id_edificio: parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                >
+                  <option value="">Selecciona un edificio...</option>
+                  {edificios.map((edificio) => (
+                    <option key={edificio.id_edificio} value={edificio.id_edificio}>
+                      {edificio.nombre}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="creador" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                    Creador
+                  </label>
+                  <select
+                    id="creador"
+                    value={formData.id_creador}
+                    onChange={(e) => setFormData({ ...formData, id_creador: parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  >
+                    {usuarios.map((usuario) => (
+                      <option key={usuario.id_usuario} value={usuario.id_usuario}>
+                        {usuario.nombre} ({usuario.rol})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="prioridad_evento" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                    Prioridad
+                  </label>
+                  <input
+                    type="number"
+                    id="prioridad_evento"
+                    min="1"
+                    max="5"
+                    required
+                    value={formData.prioridad_evento}
+                    onChange={(e) => setFormData({ ...formData, prioridad_evento: Number.parseInt(e.target.value) })}
+                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="total_invitados" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                  Total de Invitados (0 = Sin límite / Opcional)
+                </label>
+                <input
+                  type="number"
+                  id="total_invitados"
+                  min="0"
+                  value={formData.total_invitados}
+                  onChange={(e) => setFormData({ ...formData, total_invitados: Number.parseInt(e.target.value) })}
+                  className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="fecha_inicio" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                    Fecha de Inicio *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="fecha_inicio"
+                    required
+                    value={formData.fecha_inicio}
+                    onChange={(e) => setFormData({ ...formData, fecha_inicio: e.target.value })}
+                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="fecha_fin" className="block text-sm font-medium text-[var(--app-text-primary)] mb-1">
+                    Fecha de Fin *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    id="fecha_fin"
+                    required
+                    value={formData.fecha_fin}
+                    onChange={(e) => setFormData({ ...formData, fecha_fin: e.target.value })}
+                    className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-b border-[var(--app-border)] py-4 my-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="es_de_paga"
+                    checked={formData.es_de_paga}
+                    onChange={(e) => setFormData({ ...formData, es_de_paga: e.target.checked })}
+                    className="w-4 h-4 text-[var(--app-blue)] rounded focus:ring-[var(--app-blue)]"
+                  />
+                  <label htmlFor="es_de_paga" className="text-sm font-semibold text-[var(--app-text-primary)]">
+                    Evento de paga
+                  </label>
+                </div>
+
+                {formData.es_de_paga && (
+                  <div>
+                    <label htmlFor="precio" className="block text-sm font-semibold text-[var(--app-text-primary)] mb-1">
+                      Precio ($ MXN)
+                    </label>
+                    <input
+                      type="number"
+                      id="precio"
+                      min="1"
+                      step="1"
+                      value={formData.precio}
+                      onChange={(e) => setFormData({ ...formData, precio: Number.parseFloat(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] rounded-lg text-[var(--app-text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--app-blue)]"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="publico"
+                    checked={formData.publico}
+                    onChange={(e) => setFormData({ ...formData, publico: e.target.checked })}
+                    className="w-4 h-4 text-[var(--app-blue)] rounded"
+                  />
+                  <label htmlFor="publico" className="text-sm text-[var(--app-text-primary)]">
+                    Evento público
+                  </label>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="activo"
+                    checked={formData.activo}
+                    onChange={(e) => setFormData({ ...formData, activo: e.target.checked })}
+                    className="w-4 h-4 text-[var(--app-blue)] rounded"
+                  />
+                  <label htmlFor="activo" className="text-sm text-[var(--app-text-primary)]">
+                    Evento activo
+                  </label>
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-[var(--app-border)]">
+                <button
+                  type="button"
+                  onClick={handleCloseModal}
+                  className="flex-1 px-4 py-2 bg-[var(--app-hover)] text-[var(--app-text-primary)] rounded-lg hover:bg-opacity-80 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-2 bg-[var(--app-blue)] text-white rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  {editingEvento ? 'Actualizar' : 'Crear'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Gráfica IA */}
+      {showChartModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-2xl w-full">
+            <div className="p-6 border-b border-[var(--app-border)] flex justify-between items-center">
+              <h3 className="text-xl font-bold text-[var(--app-text-primary)] flex items-center gap-2">
+                <Brain className="w-5 h-5 text-purple-500" />
+                Curva de Aprendizaje (Pérdida/Error)
+              </h3>
+              <button onClick={() => setShowChartModal(false)} className="text-[var(--app-text-secondary)] hover:text-[var(--app-text-primary)] hover:bg-[var(--app-hover)] rounded-md px-2">
+                ✕
+              </button>
+            </div>
+            <div className="p-6 h-80">
+              {learningCurve.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={learningCurve}>
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                    <XAxis dataKey="epoch" stroke="var(--app-text-secondary)" fontSize={12} label={{ value: 'Época', position: 'insideBottomRight', offset: 0, fill: 'var(--app-text-secondary)' }} />
+                    <YAxis stroke="var(--app-text-secondary)" fontSize={12} label={{ value: 'Error (MSE)', angle: -90, position: 'insideLeft', fill: 'var(--app-text-secondary)' }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'var(--app-card-bg)', borderColor: 'var(--app-border)', color: 'var(--app-text-primary)' }}
+                      itemStyle={{ color: 'var(--app-blue)' }}
+                    />
+                    <Line type="monotone" dataKey="loss" name="Pérdida" stroke="var(--app-blue)" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="flex h-full items-center justify-center text-[var(--app-text-secondary)]">No hay datos disponibles</div>
+              )}
+            </div>
+            <div className="p-4 border-t border-[var(--app-border)] bg-[var(--app-hover)] rounded-b-lg">
+              <p className="text-sm text-[var(--app-text-secondary)]">
+                La gráfica muestra cómo la red de TensorFlow ha ajustado sus pesos a través de las diferentes épocas, minimizando el error (MSE). Una curva descendente significa que el modelo está aprendiendo exitosamente dónde ubicar los eventos.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Eliminar */}
+      {showDeleteModal && deletingEvento && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900 flex items-center justify-center">
+                  <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[var(--app-text-primary)]">
+                    Eliminar Evento
+                  </h3>
+                  <p className="text-sm text-[var(--app-text-secondary)]">
+                    Esta acción no se puede deshacer
+                  </p>
+                </div>
+              </div>
+
+              <p className="text-sm text-[var(--app-text-primary)] mb-6">
+                ¿Estás seguro de que deseas eliminar el evento <strong>"{deletingEvento.nombre}"</strong>?
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeletingEvento(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-[var(--app-hover)] text-[var(--app-text-primary)] rounded-lg hover:bg-opacity-80 transition-all"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal QR Code */}
+      {showQrModal && qrEvento && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[var(--app-card-bg)] rounded-lg shadow-xl max-w-sm w-full p-6 text-center border border-[var(--app-border)]">
+            <h3 className="text-lg font-bold text-[var(--app-text-primary)] mb-2">
+              QR de Asistencia y Registro
+            </h3>
+            <p className="text-sm font-bold text-[var(--app-blue)] truncate mb-4">
+              {qrEvento.nombre}
+            </p>
+            <div className="bg-white p-4 rounded-xl inline-block shadow-sm mb-4">
+              <QRCodeSVG 
+                value={`${globalThis.location.origin}/eventos/${qrEvento.id_evento}/confirmar`}
+                size={200}
+                bgColor={"#ffffff"}
+                fgColor={"#000000"}
+                level={"H"}
+              />
+            </div>
+            
+            {/* Event Summary Details inside QR Modal */}
+            <div className="text-left text-xs bg-[var(--app-hover)] p-3 rounded-lg border border-[var(--app-border)] space-y-1 mb-6 text-[var(--app-text-primary)]">
+              <p><strong>Ubicación:</strong> {qrEvento.edificio?.nombre || 'Sin edificio'}</p>
+              <p><strong>Tipo:</strong> {qrEvento.es_de_paga ? `De Paga ($${Number.parseFloat(qrEvento.precio).toFixed(2)} MXN)` : 'Gratuito'}</p>
+              <p><strong>Inicio:</strong> {new Date(qrEvento.fecha_inicio).toLocaleString('es-MX')}</p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => downloadEventPdf(qrEvento)}
+                className="flex items-center justify-center gap-2 px-4 py-2 bg-[var(--app-blue)] hover:bg-opacity-90 text-white rounded-lg transition-all w-full font-semibold cursor-pointer"
+              >
+                <Download className="w-4 h-4" />
+                Descargar Flyer PDF
+              </button>
+              <button
+                onClick={() => { setShowQrModal(false); setQrEvento(null); }}
+                className="px-4 py-2 bg-[var(--app-hover)] border border-[var(--app-border)] text-[var(--app-text-primary)] rounded-lg hover:bg-opacity-80 transition-all w-full cursor-pointer"
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
