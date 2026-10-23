@@ -15,8 +15,6 @@ import CubiculosManagement from './pages/admin/CubiculosManagement';
 import SalonesManagement from "./pages/admin/SalonesManagement";
 import UsuariosManagement from "./pages/admin/UsuariosManagement";
 import EventConfirmation from "./pages/EventConfirmation";
-import Mercancia from "./pages/Mercancia";
-import ProductosManagement from "./pages/admin/ProductosManagement";
 import GestionProfesor from "./pages/profesor/GestionProfesor";
 import PerfilProfesor from "./pages/profesor/PerfilProfesor";
 import EventsManagementProfesor from "./pages/profesor/EventsManagementProfesor";
@@ -83,10 +81,6 @@ export const router = createBrowserRouter([
     element: <EventConfirmation />,
   },
   {
-    path: "/mercancia",
-    element: <Mercancia />,
-  },
-  {
     path: "/eventos/ticket/:id_invitado/verificar",
     element: <TicketVerification />,
   },
@@ -101,10 +95,6 @@ export const router = createBrowserRouter([
       {
         index: true,
         element: <Navigate to="/admin/analytics" replace />,
-      },
-      {
-        path: "productos",
-        element: <ProductosManagement />,
       },
       {
         path: "edificios",
