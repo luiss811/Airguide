@@ -12,8 +12,7 @@ import {
   Save, 
   AlertCircle 
 } from 'lucide-react';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from '../../config/api';
 
 export default function GestionProfesor() {
   const { edificios } = useEdificios();

@@ -75,13 +75,18 @@ npm run dev
 ```
 . Eso debe de inciar el frontend.
 
+### ¡¡¡Para contribuir al proyecto necesitas crea un Fork!
+
 ## Seguridad y DevSecOps
 
 El proyecto cuenta con controles de seguridad integrados:
 - **Sanitización de Entradas:** Validación de formularios y prevención de XSS.
 - **Manejo Seguro de Sesión:** Almacenamiento seguro de tokens JWT expirables.
-- **Configuración Centralizada de API:** Ninguna URL de backend se encuentra hardcodeada en el código fuente (`src/app/config/api.ts`).
+- **Configuración Centralizada de API:** Ninguna URL de backend se encuentra hardcodeada en el código.
 
 ---
+
+[![Architecture diagram of luiss811/airguide](https://gitdiagram.com/luiss811/airguide/diagram.png)](https://gitdiagram.com/luiss811/airguide?utm_source=readme&utm_medium=picture)
+
 
 Desarrollado por el equipo **Airguide** | Todos los derechos reservados.

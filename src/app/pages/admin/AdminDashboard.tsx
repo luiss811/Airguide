@@ -19,14 +19,6 @@ export default function AdminDashboard() {
 
   const quickActions = [
     {
-      title: 'Mercancía UTEQ',
-      description: 'Gestionar playeras, termos, llaveros y sudaderas',
-      icon: ShoppingBag,
-      color: 'bg-emerald-500',
-      path: '/admin/productos',
-      count: 'Catálogo'
-    },
-    {
       title: 'Edificios',
       description: 'Gestionar edificios y ubicaciones',
       icon: Building2,

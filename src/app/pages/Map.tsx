@@ -8,13 +8,8 @@ import { ThemeToggle } from '../components/ThemeToggle';
 import { SearchBar } from '../components/SearchBar';
 import { GoogleMap, useJsApiLoader, Marker, DirectionsRenderer, Polyline } from '@react-google-maps/api';
 import { toast } from 'sonner';
-import {
-    Carousel,
-    CarouselContent,
-    CarouselItem,
-    CarouselPrevious,
-    CarouselNext,
-} from '../components/ui/carousel';
+import { API_URL } from '../config/api';
+import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from '../components/ui/carousel';
 
 const center = { lat: 20.656333, lng: -100.404745 };
 const containerStyle = { width: '100%', height: '100%' };
@@ -235,7 +230,6 @@ export default function MapPage() {
     useEffect(() => {
         const fetchCaminos = async () => {
             try {
-                const API_URL = import.meta.env.VITE_API_URL;
                 const res = await fetch(`${API_URL}/mapa/data`);
                 if (res.ok) {
                     const data = await res.json();
@@ -285,7 +279,6 @@ export default function MapPage() {
             setHeatmapRoutes([]);
         } else {
             try {
-                const API_URL = import.meta.env.VITE_API_URL;
                 toast.info("Analizando datos de todas las rutas...", { duration: 3000 });
                 const res = await fetch(`${API_URL}/rutas/heatmap`);
                 if (res.ok) {
@@ -345,7 +338,6 @@ export default function MapPage() {
     };
 
     const fetchCustomPath = async (originId: number, destinationId: number): Promise<google.maps.LatLngLiteral[] | null> => {
-        const API_URL = import.meta.env.VITE_API_URL;
         const token = localStorage.getItem('token');
         try {
             const res = await fetch(`${API_URL}/rutas/find`, {

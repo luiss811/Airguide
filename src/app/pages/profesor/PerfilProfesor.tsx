@@ -3,8 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { User, Mail, Hash, Save, ShieldAlert } from 'lucide-react';
 import { useNavigate } from 'react-router';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from '../../config/api';
 
 export default function PerfilProfesor() {
   const { user } = useAuth();

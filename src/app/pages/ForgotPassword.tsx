@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Mail, MapPin, ArrowLeft } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 export default function ForgotPassword() {
   const [correo, setCorreo] = useState('');
@@ -23,7 +24,6 @@ export default function ForgotPassword() {
     setLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
       const response = await fetch(`${API_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

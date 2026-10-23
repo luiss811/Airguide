@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router';
 import { CheckCircle, AlertTriangle, XCircle, Loader2, Calendar, MapPin, User, Mail, DollarSign } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 interface VerificationResult {
   message: string;
@@ -28,7 +29,6 @@ export default function TicketVerification() {
   useEffect(() => {
     const verifyTicket = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL;
         const response = await fetch(`${API_URL}/eventos/confirmar-ticket/${id_invitado}`, {
           method: 'POST',
         });

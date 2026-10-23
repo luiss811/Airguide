@@ -5,8 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { API_URL } from '../../config/api';
 
 export interface Evento {
   id_evento: number;

@@ -4,6 +4,7 @@ import { CheckCircle, XCircle, Loader2, ArrowLeft, Calendar, MapPin, DollarSign,
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import { QRCodeSVG } from 'qrcode.react';
+import { API_URL } from '../config/api';
 
 interface EventoDetails {
   id_evento: number;
@@ -167,7 +168,7 @@ export default function EventConfirmation() {
       return (
         <>
           <Loader2 className="w-5 h-5 mr-2.5 animate-spin" />
-          {processingPayment ? 'Procesando Pago Seguro...' : 'Registrando asistencia...'}
+          {processingPayment ? 'Procesando Pago...' : 'Registrando asistencia...'}
         </>
       );
     }
@@ -180,7 +181,6 @@ export default function EventConfirmation() {
   useEffect(() => {
     const fetchEvent = async () => {
       try {
-        const API_URL = import.meta.env.VITE_API_URL;
         const response = await fetch(`${API_URL}/eventos/${id}`);
         if (!response.ok) throw new Error('No se pudieron obtener los detalles del evento.');
         const data = await response.json();
@@ -211,7 +211,6 @@ export default function EventConfirmation() {
 
       if (eventData?.es_de_paga) {
         setProcessingPayment(true);
-        // Simulate payment gateway delay (1.5s)
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
         // Validation rules for simulated credit card checkout
@@ -231,7 +230,6 @@ export default function EventConfirmation() {
         setProcessingPayment(false);
       }
 
-      const API_URL = import.meta.env.VITE_API_URL;
       const response = await fetch(`${API_URL}/eventos/${id}/registrar-invitado`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import { ThemeToggle } from '../components/ThemeToggle';
 import { Lock, MapPin, KeyRound, ArrowLeft } from 'lucide-react';
+import { API_URL } from '../config/api';
 
 export default function ResetPassword() {
   const location = useLocation();
@@ -46,7 +47,6 @@ export default function ResetPassword() {
     setLoading(true);
 
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
       const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

@@ -4,6 +4,7 @@ import { useAnalytics } from '../../hooks';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 import { toast } from 'sonner';
+import { API_URL } from '../../config/api';
 
 export default function Analytics() {
   const {
@@ -58,7 +59,6 @@ export default function Analytics() {
     setIsTraining(true);
     toast.info("Entrenando Neurona...");
     try {
-      const API_URL = import.meta.env.VITE_API_URL;
       const token = localStorage.getItem('token');
       const res = await fetch(`${API_URL}/analytics/train-congestion`, {
         method: 'POST',
